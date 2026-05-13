@@ -1,0 +1,6 @@
+*.csv !text !filter !merge !diff
+*.csv filter=lfs diff=lfs merge=lfs -text
+*.zip filter=lfs diff=lfs merge=lfs -text
+*.zip !text !filter !merge !diff
+*.log filter=lfs diff=lfs merge=lfs -text
+*.log !text !filter !merge !diff
