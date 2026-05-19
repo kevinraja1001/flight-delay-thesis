@@ -1,105 +1,75 @@
 const _ = require('lodash');
 const Bluebird = require('bluebird');
+const fs = require('fs');
 const dayjs = require('dayjs');
-const superagent = require('superagent');
+const { parse } = require('csv-parse');
 
-const utc = require('dayjs/plugin/utc');
-const timezone = require('dayjs/plugin/timezone');
-dayjs.extend(utc);
-dayjs.extend(timezone);
+const aeroApi4Helpers = require('./helpers/aero_api4');
 
-const {
-    AERO_API_4_API_KEY,
-    AERO_API_4_URL,
-} = process.env;
+const AIRPORT_COUNT = 10;
 
 Bluebird
     .try(async () => {
-        const airlineIcao = 'QFA';
-        const startTime = '2026-05-04';
-        const firstPath = `/airports/YSSY/flights/departures?airline=${airlineIcao}&start=${startTime}`;
-        const apiUrl = `${AERO_API_4_URL}${firstPath}`;
+        const airlineDataParser = fs
+            .createReadStream('./datasets/top-australian-airlines.csv')
+            .pipe(parse({
+                columns: true,
+                skip_empty_lines: true,
+                trim: true,
+                relax_column_count: true,
+            }));
 
-        const response = await superagent
-            .get(apiUrl)
-            .set('x-apikey', AERO_API_4_API_KEY);
+        const airportDataParser = fs
+            .createReadStream('./datasets/top-20-busiest-australian-airports.csv')
+            .pipe(parse({
+                columns: true,
+                skip_empty_lines: true,
+                trim: true,
+                relax_column_count: true,
+            }));
+        
+        const airports = [];
+        for await (const record of airportDataParser) {
+            airports.push(record);
+        }
 
-        const { body: responseBody } = response;
+        const airlines = [];
+        for await (const record of airlineDataParser) {
+            airlines.push(record);
+        };
 
-        const results = _.map(responseBody.departures, dep => {
-            const originTimezone = dep.origin?.timezone;
-            const destinationTimezone = dep.destination?.timezone;
+        await Bluebird.map(airports, async (airport) => {
+            if (Number(airport.Rank) > 1) {
+                return Bluebird.resolve();
+            }
 
-            return ({
-                ...dep,
-                scheduled_out_local: dep.scheduled_out && originTimezone
-                    ? dayjs(dep.scheduled_out)
-                        .tz(originTimezone)
-                        .format('YYYY-MM-DDTHH:mm:ssZ')
-                    : dep.scheduled_out,
-                estimated_out_local: dep.estimated_out
-                    ? dayjs(dep.estimated_out)
-                        .tz(originTimezone)
-                        .format('YYYY-MM-DDTHH:mm:ssZ')
-                    : dep.estimated_out,
-                actual_out_local: dep.actual_out
-                    ? dayjs(dep.actual_out)
-                        .tz(originTimezone)
-                        .format('YYYY-MM-DDTHH:mm:ssZ')
-                    : dep.actual_out,
-                
-                scheduled_off_local: dep.scheduled_off && originTimezone
-                    ? dayjs(dep.scheduled_off)
-                        .tz(originTimezone)
-                        .format('YYYY-MM-DDTHH:mm:ssZ')
-                    : dep.scheduled_off,
-                estimated_off_local: dep.estimated_off
-                    ? dayjs(dep.estimated_off)
-                        .tz(originTimezone)
-                        .format('YYYY-MM-DDTHH:mm:ssZ')
-                    : dep.estimated_off,
-                actual_off_local: dep.actual_off
-                    ? dayjs(dep.actual_off)
-                        .tz(originTimezone)
-                        .format('YYYY-MM-DDTHH:mm:ssZ')
-                    : dep.actual_off,
-                
-                scheduled_on_local: dep.scheduled_on && destinationTimezone
-                    ? dayjs(dep.scheduled_on)
-                        .tz(destinationTimezone)
-                        .format('YYYY-MM-DDTHH:mm:ssZ')
-                    : dep.scheduled_on,
-                estimated_on_local: dep.estimated_on
-                    ? dayjs(dep.estimated_on)
-                        .tz(destinationTimezone)
-                        .format('YYYY-MM-DDTHH:mm:ssZ')
-                    : dep.estimated_on,
-                actual_on_local: dep.actual_on
-                    ? dayjs(dep.actual_on)
-                        .tz(destinationTimezone)
-                        .format('YYYY-MM-DDTHH:mm:ssZ')
-                    : dep.actual_on,
+            const focusedDay = dayjs()
+                .tz('Australia/Sydney')
+                .subtract(1, 'day');
+            
 
-                scheduled_in_local: dep.scheduled_in && destinationTimezone
-                    ? dayjs(dep.scheduled_in)
-                        .tz(destinationTimezone)
-                        .format('YYYY-MM-DDTHH:mm:ssZ')
-                    : dep.scheduled_in,
-                estimated_in_local: dep.estimated_in
-                    ? dayjs(dep.estimated_in)
-                        .tz(destinationTimezone)
-                        .format('YYYY-MM-DDTHH:mm:ssZ')
-                    : dep.estimated_in,
-                actual_in_local: dep.actual_in
-                    ? dayjs(dep.actual_in)
-                        .tz(destinationTimezone)
-                        .format('YYYY-MM-DDTHH:mm:ssZ')
-                    : dep.actual_in,
+            const queryParams = {
+                start: focusedDay
+                    .startOf('day')
+                    .toISOString(),
+                end: focusedDay
+                    .clone()
+                    .add(1, 'day')
+                    .startOf('day')
+                    .toISOString(),
+                max_pages: 10,
+            };
+
+            const flights = await aeroApi4Helpers.getFlightsDepartedFromAirport(airport.ICAO, queryParams);
+
+            console.log(`Total flights from ${airport.City} on ${focusedDay.format('YYYY-MM-DD')}: ${flights.length}!`);
+            _.forEach(flights, (flight, idx) => {
+                if (idx <= 2) {
+                    console.log(JSON.stringify(flight, null, 2));
+                }
             });
-        });
+        }, { concurrency: 1 });
 
-        console.log(JSON.stringify(results, null, 2));
-        console.log(`Next URL: ${AERO_API_4_URL}${responseBody.links?.next}`);
 
     })
     .catch((err) => {
