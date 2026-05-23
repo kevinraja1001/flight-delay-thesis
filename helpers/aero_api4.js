@@ -111,13 +111,14 @@ const sendRequest = (urlPath) => {
 };
 
 /**
- * Get flights that are departed from an airport
+ * Get flights from AeroAPI
  * @author Jeremia Siahaan
- * @param {string} originAirportCode 
- * @param {Object} queryParams 
+ * @param {string} urlPath 
+ * @param {Object} [queryParams]
+ * @param {string[]} [flightsKeys] 
  * @returns {Array<Object>}
  */
-const getFlightsDepartedFromAirport = async (originAirportCode, queryParams) => {
+const getFlights = async (urlPath, queryParams = {}, flightsKeys = []) => {
     let pageCount = 0;
 
     if (queryParams.max_pages && queryParams.max_pages > PAGES_LIMIT) {
@@ -125,7 +126,7 @@ const getFlightsDepartedFromAirport = async (originAirportCode, queryParams) => 
     }
 
     const queryString = new URLSearchParams(queryParams).toString();
-    let urlPath = `/airports/${originAirportCode}/flights/departures?${queryString}`;
+    let _urlPath = `${urlPath}?${queryString}`;
 
     const flights = [];
     let isNextLinkAvailable = true;
@@ -146,9 +147,9 @@ const getFlightsDepartedFromAirport = async (originAirportCode, queryParams) => 
         let response;
 
         try {
-            response = await sendRequest(urlPath);
+            response = await sendRequest(_urlPath);
         } catch (err) {
-            let errorMessage = `Error from AeroAPI4 when sending request to ${urlPath} with query: ${JSON.stringify(queryParams)}.`;
+            let errorMessage = `Error from AeroAPI4 when sending request to ${_urlPath} with query: ${JSON.stringify(queryParams)}.`;
 
             if (err.response) {
                 // The request was made and the server responded with a status code
@@ -171,14 +172,17 @@ const getFlightsDepartedFromAirport = async (originAirportCode, queryParams) => 
 
         if (response?.data) {
             const { data: responseData } = response;
-            console.log(`Get ${responseData.departures.length} flights from path ${urlPath}!`);
-            flights.push(...formatDepartureFlights(responseData.departures));
+            _.forEach(flightsKeys, (flightsKey) => {
+                console.log(`Get ${responseData[flightsKey]?.length || 0} ${flightsKey} flights from path ${_urlPath}!`);
+                flights.push(...formatDepartureFlights(responseData[flightsKey]));
+            });
+            
 
             LAST_ATTEMPT.pages += Number(responseData.num_pages);
             LAST_ATTEMPT.timestamp = dayjs().toISOString();
 
             if (responseData.links?.next) {
-                urlPath = responseData.links.next;
+                _urlPath = responseData.links.next;
                 isNextLinkAvailable = true;
             } else {
                 isNextLinkAvailable = false;
@@ -192,66 +196,102 @@ const getFlightsDepartedFromAirport = async (originAirportCode, queryParams) => 
 };
 
 /**
+ * Get flights that are departed from an airport
+ * @author Jeremia Siahaan
+ * @param {string} originAirportCode 
+ * @param {Object} queryParams 
+ * @returns {Array<Object>}
+ */
+const getFlightsDepartedFromAirport = (originAirportCode, queryParams) => getFlights(
+    `/airports/${originAirportCode}/flights/departures?${queryString}`,
+    queryParams,
+    ['departures'],
+);
+
+/**
  * Get historical flights that were planned to depart from an airport
  * @author Jeremia Siahaan
  * @param {string} originAirportCode 
  * @param {Object} queryParams 
  * @returns {Array<Object>}
  */
-const getHistoricalFlightsDepartedFromAirport = async (originAirportCode, queryParams) => {
-    const queryString = new URLSearchParams(queryParams).toString();
-    let urlPath = `/history/airports/${originAirportCode}/flights/departures?${queryString}`;
+const getHistoricalFlightsDepartedFromAirport = (originAirportCode, queryParams) => getFlights(
+    `/history/airports/${originAirportCode}/flights/departures?${queryString}`,
+    queryParams,
+    ['departures'],
+);
 
-    const flights = [];
-    let isNextLinkAvailable = true;
+/**
+ * Get all flights of an operator
+ * @author Jeremia Siahaan
+ * @param {string} airlineCode 
+ * @param {Object} queryParams 
+ * @returns {Array<Object>}
+ */
+const getOperatorFlights = (airlineCode, queryParams) => getFlights(
+    `/operators/${airlineCode}/flights`,
+    queryParams,
+    ['scheduled', 'arrivals', 'enroute'],
+);
 
-    while (isNextLinkAvailable) {
-        let response;
+/**
+ * Get all arrived flights of an operator
+ * @author Jeremia Siahaan
+ * @param {string} airlineCode 
+ * @param {Object} queryParams 
+ * @returns {Array<Object>}
+ */
+const getOperatorArrivedFlights = (airlineCode, queryParams) => getFlights(
+    `/operators/${airlineCode}/flights/arrivals`,
+    queryParams,
+    ['arrivals'],
+);
 
-        try {
-            response = await sendRequest(urlPath);
-        } catch (err) {
-            let errorMessage = `Error from AeroAPI4 when sending request to ${urlPath} with query: ${JSON.stringify(queryParams)}.`;
+/**
+ * Get all en route flights of an operator
+ * @author Jeremia Siahaan
+ * @param {string} airlineCode 
+ * @param {Object} queryParams 
+ * @returns {Array<Object>}
+ */
+const getOperatorEnRouteFlights = (airlineCode, queryParams) => getFlights(
+    `/operators/${airlineCode}/flights/enroute`,
+    queryParams,
+    ['enroute'],
+);
 
-            if (err.response) {
-                // The request was made and the server responded with a status code
-                // that falls out of the range of 2xx
-                errorMessage += ` Response: ${JSON.stringify(err.response.data)}, status: ${err.response.status}, headers: ${err.response.headers}.`;
-            } else if (err.request) {
-                // The request was made but no response was received
-                // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
-                // http.ClientRequest in node.js
-                errorMessage += ` Request: ${JSON.stringify(err.request)}.`;
-            } else {
-                // Something happened in setting up the request that triggered an Error
-                errorMessage += ` Error: ${err.message}.`;
-            }
+/**
+ * Get all scheduled flights of an operator
+ * @author Jeremia Siahaan
+ * @param {string} airlineCode 
+ * @param {Object} queryParams 
+ * @returns {Array<Object>}
+ */
+const getOperatorScheduledFlights = (airlineCode, queryParams) => getFlights(
+    `/operators/${airlineCode}/flights/scheduled`,
+    queryParams,
+    ['scheduled'],
+);
 
-            errorMessage += ` Config: ${JSON.stringify(err.config)}.`;
-            console.log(errorMessage);
-            isNextLinkAvailable = false;
-        }
-
-        if (response?.data) {
-            const { data: responseData } = response;
-            console.log(`Get ${responseData.departures.length} flights from path ${urlPath}!`);
-            flights.push(...formatDepartureFlights(responseData.departures));
-
-            if (responseData.links?.next) {
-                urlPath = responseData.links.next;
-                isNextLinkAvailable = true;
-            } else {
-                isNextLinkAvailable = false;
-            }
-        } else {
-            isNextLinkAvailable = false;
-        }
-    }
-
-    return flights;
-};
+/**
+ * Get all historical flights of an operator
+ * @author Jeremia Siahaan
+ * @param {string} airlineCode 
+ * @param {Object} queryParams 
+ * @returns {Array<Object>}
+ */
+const getHistoricalOperatorFlights = (airlineCode, queryParams) => getFlights(
+    `/history/operators/${airlineCode}/flights`,
+    queryParams,
+    ['flights'],
+);
 
 module.exports = {
     getFlightsDepartedFromAirport,
     getHistoricalFlightsDepartedFromAirport,
+    getHistoricalOperatorFlights,
+    getOperatorArrivedFlights,
+    getOperatorEnRouteFlights,
+    getOperatorFlights,
+    getOperatorScheduledFlights,
 };
