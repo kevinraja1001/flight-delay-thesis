@@ -1,3 +1,3 @@
 # Thesis DATA
 ## Inquire Data
-`node --env-file=.env inquire-data.js`
+`nohup node --env-file=.env inquire-data.js > result_test_001.csv 2>&1`

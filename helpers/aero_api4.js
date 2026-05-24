@@ -1,6 +1,5 @@
 const _ = require('lodash');
 const axios = require('axios');
-const Bluebird = require('bluebird');
 const dayjs = require('dayjs');
 
 const utc = require('dayjs/plugin/utc');
@@ -14,82 +13,88 @@ const {
 } = process.env;
 
 const PAGES_LIMIT = 10;
-const SECONDS_PER_PAGES_LIMIT = 60;
+const MILLISECONDS_PER_PAGES_LIMIT = 60 * 1000;
 
 const LAST_ATTEMPT = {
     pages: 0,
     timestamp: null,
 };
 
-const formatDepartureFlights = departureFlights => _.map(departureFlights, depFlight => {
-    const originTimezone = depFlight.origin?.timezone;
-    const destinationTimezone = depFlight.destination?.timezone;
+/**
+ * Format flights objects array
+ * @author Jeremia Siahaan
+ * @param {Object[]} flights 
+ * @returns {Object[]}
+ */
+const formatFlights = flights => _.map(flights, flight => {
+    const originTimezone = flight.origin?.timezone;
+    const destinationTimezone = flight.destination?.timezone;
 
     return ({
-        ...depFlight,
-        scheduled_out_local: depFlight.scheduled_out && originTimezone
-            ? dayjs(depFlight.scheduled_out)
+        ...flight,
+        scheduled_out_local: flight.scheduled_out && originTimezone
+            ? dayjs(flight.scheduled_out)
                 .tz(originTimezone)
                 .format('YYYY-MM-DDTHH:mm:ssZ')
-            : depFlight.scheduled_out,
-        estimated_out_local: depFlight.estimated_out
-            ? dayjs(depFlight.estimated_out)
+            : flight.scheduled_out,
+        estimated_out_local: flight.estimated_out
+            ? dayjs(flight.estimated_out)
                 .tz(originTimezone)
                 .format('YYYY-MM-DDTHH:mm:ssZ')
-            : depFlight.estimated_out,
-        actual_out_local: depFlight.actual_out
-            ? dayjs(depFlight.actual_out)
+            : flight.estimated_out,
+        actual_out_local: flight.actual_out
+            ? dayjs(flight.actual_out)
                 .tz(originTimezone)
                 .format('YYYY-MM-DDTHH:mm:ssZ')
-            : depFlight.actual_out,
+            : flight.actual_out,
         
-        scheduled_off_local: depFlight.scheduled_off && originTimezone
-            ? dayjs(depFlight.scheduled_off)
+        scheduled_off_local: flight.scheduled_off && originTimezone
+            ? dayjs(flight.scheduled_off)
                 .tz(originTimezone)
                 .format('YYYY-MM-DDTHH:mm:ssZ')
-            : depFlight.scheduled_off,
-        estimated_off_local: depFlight.estimated_off
-            ? dayjs(depFlight.estimated_off)
+            : flight.scheduled_off,
+        estimated_off_local: flight.estimated_off
+            ? dayjs(flight.estimated_off)
                 .tz(originTimezone)
                 .format('YYYY-MM-DDTHH:mm:ssZ')
-            : depFlight.estimated_off,
-        actual_off_local: depFlight.actual_off
-            ? dayjs(depFlight.actual_off)
+            : flight.estimated_off,
+        actual_off_local: flight.actual_off
+            ? dayjs(flight.actual_off)
                 .tz(originTimezone)
                 .format('YYYY-MM-DDTHH:mm:ssZ')
-            : depFlight.actual_off,
+            : flight.actual_off,
         
-        scheduled_on_local: depFlight.scheduled_on && destinationTimezone
-            ? dayjs(depFlight.scheduled_on)
+        scheduled_on_local: flight.scheduled_on && destinationTimezone
+            ? dayjs(flight.scheduled_on)
                 .tz(destinationTimezone)
                 .format('YYYY-MM-DDTHH:mm:ssZ')
-            : depFlight.scheduled_on,
-        estimated_on_local: depFlight.estimated_on
-            ? dayjs(depFlight.estimated_on)
+            : flight.scheduled_on,
+        estimated_on_local: flight.estimated_on
+            ? dayjs(flight.estimated_on)
                 .tz(destinationTimezone)
                 .format('YYYY-MM-DDTHH:mm:ssZ')
-            : depFlight.estimated_on,
-        actual_on_local: depFlight.actual_on
-            ? dayjs(depFlight.actual_on)
+            : flight.estimated_on,
+        actual_on_local: flight.actual_on
+            ? dayjs(flight.actual_on)
                 .tz(destinationTimezone)
                 .format('YYYY-MM-DDTHH:mm:ssZ')
-            : depFlight.actual_on,
+            : flight.actual_on,
 
-        scheduled_in_local: depFlight.scheduled_in && destinationTimezone
-            ? dayjs(depFlight.scheduled_in)
+        scheduled_in_local: flight.scheduled_in && destinationTimezone
+            ? dayjs(flight.scheduled_in)
                 .tz(destinationTimezone)
                 .format('YYYY-MM-DDTHH:mm:ssZ')
-            : depFlight.scheduled_in,
-        estimated_in_local: depFlight.estimated_in
-            ? dayjs(depFlight.estimated_in)
+            : flight.scheduled_in,
+        estimated_in_local: flight.estimated_in
+            ? dayjs(flight.estimated_in)
                 .tz(destinationTimezone)
                 .format('YYYY-MM-DDTHH:mm:ssZ')
-            : depFlight.estimated_in,
-        actual_in_local: depFlight.actual_in
-            ? dayjs(depFlight.actual_in)
+            : flight.estimated_in,
+        actual_in_local: flight.actual_in
+            ? dayjs(flight.actual_in)
                 .tz(destinationTimezone)
                 .format('YYYY-MM-DDTHH:mm:ssZ')
-            : depFlight.actual_in,
+            : flight.actual_in,
     });
 });
 
@@ -109,6 +114,13 @@ const sendRequest = (urlPath) => {
         url: apiUrl,
     });
 };
+
+/**
+ * Delay for given milliseconds
+ * @param {number} ms 
+ * @returns {Promise}
+ */
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * Get flights from AeroAPI
@@ -133,14 +145,14 @@ const getFlights = async (urlPath, queryParams = {}, flightsKeys = []) => {
 
     while (isNextLinkAvailable) {
         if (LAST_ATTEMPT.pages + queryParams.max_pages > PAGES_LIMIT) {
-            let waitTimeInSeconds = SECONDS_PER_PAGES_LIMIT;
+            let waitTimeInMs = MILLISECONDS_PER_PAGES_LIMIT;
 
             if (LAST_ATTEMPT.timestamp) {
-                waitTimeInSeconds -= dayjs().diff(LAST_ATTEMPT.timestamp, 'second');
+                waitTimeInMs -= new Date() - LAST_ATTEMPT.timestamp;
             }
             
-            console.log(`Last attempt happened at ${LAST_ATTEMPT.timestamp}. Waiting for ${waitTimeInSeconds} seconds...`);
-            await Bluebird.delay (waitTimeInSeconds * 1000);
+            console.log(`Last attempt happened at ${LAST_ATTEMPT.timestamp}. Waiting for ${waitTimeInMs} ms...`);
+            await delay(waitTimeInMs);
             LAST_ATTEMPT.pages = 0;
         }
 
@@ -174,12 +186,12 @@ const getFlights = async (urlPath, queryParams = {}, flightsKeys = []) => {
             const { data: responseData } = response;
             _.forEach(flightsKeys, (flightsKey) => {
                 console.log(`Get ${responseData[flightsKey]?.length || 0} ${flightsKey} flights from path ${_urlPath}!`);
-                flights.push(...formatDepartureFlights(responseData[flightsKey]));
+                flights.push(...formatFlights(responseData[flightsKey]));
             });
             
 
             LAST_ATTEMPT.pages += Number(responseData.num_pages);
-            LAST_ATTEMPT.timestamp = dayjs().toISOString();
+            LAST_ATTEMPT.timestamp = new Date();
 
             if (responseData.links?.next) {
                 _urlPath = responseData.links.next;
@@ -203,9 +215,22 @@ const getFlights = async (urlPath, queryParams = {}, flightsKeys = []) => {
  * @returns {Array<Object>}
  */
 const getFlightsDepartedFromAirport = (originAirportCode, queryParams) => getFlights(
-    `/airports/${originAirportCode}/flights/departures?${queryString}`,
+    `/airports/${originAirportCode}/flights/departures`,
     queryParams,
     ['departures'],
+);
+
+/**
+ * Get flights that are departed from an airport
+ * @author Jeremia Siahaan
+ * @param {string} originAirportCode 
+ * @param {Object} queryParams 
+ * @returns {Array<Object>}
+ */
+const getFutureFlightsDepartingFromAirport = (originAirportCode, queryParams) => getFlights(
+    `/airports/${originAirportCode}/flights/scheduled_departures`,
+    queryParams,
+    ['scheduled_departures'],
 );
 
 /**
@@ -216,7 +241,7 @@ const getFlightsDepartedFromAirport = (originAirportCode, queryParams) => getFli
  * @returns {Array<Object>}
  */
 const getHistoricalFlightsDepartedFromAirport = (originAirportCode, queryParams) => getFlights(
-    `/history/airports/${originAirportCode}/flights/departures?${queryString}`,
+    `/history/airports/${originAirportCode}/flights/departures`,
     queryParams,
     ['departures'],
 );
@@ -288,6 +313,7 @@ const getHistoricalOperatorFlights = (airlineCode, queryParams) => getFlights(
 
 module.exports = {
     getFlightsDepartedFromAirport,
+    getFutureFlightsDepartingFromAirport,
     getHistoricalFlightsDepartedFromAirport,
     getHistoricalOperatorFlights,
     getOperatorArrivedFlights,
