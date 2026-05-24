@@ -13,7 +13,6 @@ const aeroApi4Helpers = require('./helpers/aero_api4');
 const AIRPORT_COUNT = 10;
 const START_DATE = '2026-05-22';
 const END_DATE = '2026-05-24';
-const focusedDay = dayjs.utc('2026-05-23');
 const idxByColumnKey = {};
 
 /**
@@ -120,14 +119,12 @@ Promise
         };
 
         const queryParams = {
-            start: focusedDay
-                .clone()
-                .startOf('day')
+            start: dayjs
+                .utc(START_DATE)
                 .format(),
-            end: focusedDay
-                .clone()
+            end: dayjs
+                .utc(END_DATE)
                 .add(1, 'day')
-                .startOf('day')
                 .format(),
             max_pages: 10,
         };
