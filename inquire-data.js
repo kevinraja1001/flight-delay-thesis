@@ -133,7 +133,7 @@ Promise
             if (Number(airport.Rank) > AIRPORT_COUNT) {
                 return null;
             }
-            console.log(`Fetching data for airport ${airport.ICAO} (IATA: ${airport.IATA}, city: ${airport.City})...`);
+            console.log(`[${new Date().toISOString()}] Fetching data for airport ${airport.ICAO} (IATA: ${airport.IATA}, city: ${airport.City})...`);
 
 
             const departureFlights = await aeroApi4Helpers.getFlightsDepartedFromAirport(
@@ -160,7 +160,7 @@ Promise
         }
 
         airlines.forEach(async (airline) => {
-            console.log(`Fetching data for airline ${airline.ICAO} (IATA: ${airline.IATA}, name: ${airline.Name})...`);
+            console.log(`[${new Date().toISOString()}] Fetching data for airline ${airline.ICAO} (IATA: ${airline.IATA}, name: ${airline.Name})...`);
 
             const arrivedFlights = await aeroApi4Helpers.getOperatorArrivedFlights(airline.ICAO, queryParams);
             _.forEach(arrivedFlights, (flight) => {
@@ -179,11 +179,11 @@ Promise
         });
     })
     .then(() => {
-        console.log('Done fetching all flights data!');
+        console.log('[${new Date().toISOString()}] Done fetching all flights data!');
     })
     .catch((err) => {
-        console.error(`Error when fetching flight data from AeroAPI4. Error: ${err.stack || err}`);
+        console.error(`[${new Date().toISOString()}] Error when fetching flight data from AeroAPI4. Error: ${err.stack || err}`);
     })
     .finally(() => {
-        console.log(`End of process!`);
+        console.log(`[${new Date().toISOString()}] End of process!`);
     });

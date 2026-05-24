@@ -106,7 +106,7 @@ const formatFlights = flights => _.map(flights, flight => {
  */
 const sendRequest = (urlPath) => {
     const apiUrl = `${AERO_API_4_URL}${urlPath}`;
-    console.log(`Sending HTTP GET request to ${apiUrl}...`);
+    console.log(`[${new Date().toISOString()}] Sending HTTP GET request to ${apiUrl}...`);
 
     return axios({
         headers: { 'x-apikey': AERO_API_4_API_KEY },
@@ -151,7 +151,7 @@ const getFlights = async (urlPath, queryParams = {}, flightsKeys = []) => {
                 waitTimeInMs -= new Date() - LAST_ATTEMPT.timestamp;
             }
             
-            console.log(`Last attempt happened at ${LAST_ATTEMPT.timestamp}. Waiting for ${waitTimeInMs} ms...`);
+            console.log(`[${new Date().toISOString()}] Last attempt happened at ${LAST_ATTEMPT.timestamp.toISOString()}. Waiting for ${waitTimeInMs} ms...`);
             await delay(waitTimeInMs);
             LAST_ATTEMPT.pages = 0;
         }
@@ -178,14 +178,14 @@ const getFlights = async (urlPath, queryParams = {}, flightsKeys = []) => {
             }
 
             errorMessage += ` Config: ${JSON.stringify(err.config)}.`;
-            console.log(errorMessage);
+            console.log(`[${new Date().toISOString()}] ${errorMessage}`);
             isNextLinkAvailable = false;
         }
 
         if (response?.data) {
             const { data: responseData } = response;
             _.forEach(flightsKeys, (flightsKey) => {
-                console.log(`Get ${responseData[flightsKey]?.length || 0} ${flightsKey} flights from path ${_urlPath}!`);
+                console.log(`[${new Date().toISOString()}] Get ${responseData[flightsKey]?.length || 0} ${flightsKey} flights from path ${_urlPath}!`);
                 flights.push(...formatFlights(responseData[flightsKey]));
             });
             
