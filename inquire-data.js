@@ -110,7 +110,7 @@ const createCsvTextGenerator = (shouldReturnHeader = false) => (flight) => {
 const pushFlightsToCsvText = (flights, shouldPrintHeader) => {
     const generateCsv = createCsvTextGenerator(false);
 
-    _.forEach(departureFlights, (flight, idx) => {
+    _.forEach(flights, (flight, idx) => {
         let _generateCsv = shouldPrintHeader && idx === 0
             ? createCsvTextGenerator(true)
             : generateCsv;
@@ -156,7 +156,7 @@ Promise
         const queryParams = {
             start: START_DATE_TIME,
             end: END_DATE_TIME,
-            max_pages: 1,
+            max_pages: 5,
         };
 
         for await (const [airportIdx, airport] of airports.entries()) {
