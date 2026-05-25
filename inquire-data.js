@@ -11,8 +11,8 @@ dayjs.extend(timezone);
 const aeroApi4Helpers = require('./helpers/aero_api4');
 
 const AIRPORT_COUNT = 10;
-const START_DATE = '2026-05-22';
-const END_DATE = '2026-05-24';
+const START_DATE = '2026-05-18';
+const END_DATE = '2026-05-21';
 const idxByColumnKey = {};
 
 /**
