@@ -17,7 +17,6 @@ const {
 
 const PAGES_LIMIT = 10;
 const MILLISECONDS_PER_PAGES_LIMIT = 60 * 1000;
-const ATTEMPTS = [];
 let IDX_BY_COLUMN_KEY = {};
 let EXPECTED_RESULTS_SHAPE = RESULTS_SHAPES.objectArray;
 let SHOULD_PRINT_RESULT_ON_LOG = false;
@@ -31,150 +30,96 @@ let CSV_TEXT = '';
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
- * Delay for handling the rate limit of Aero API 4
  * @author Jeremia Siahaan
- * @param {number} maxPages
- * @return {Promise}
+ * @constructor
  */
-const delayForRateLimit = async (maxPages) => {
-    let totalRetrievedPages = 0;
-    let lastAttemptTimestamp;
-    let attemptIdx = 0;
+function AttemptsHistory() {
+    const history = [];
 
-    while (ATTEMPTS.length > 0 && attemptIdx < ATTEMPTS.length) {
-        const attempt = ATTEMPTS[attemptIdx];
-
-        if (new Date() - attempt.timestamp > MILLISECONDS_PER_PAGES_LIMIT) {
-            ATTEMPTS.shift();
-        } else {
-            totalRetrievedPages += attempt.pages;
-            attemptIdx++;
-
-            if (attemptIdx >= ATTEMPTS.length) {
-                lastAttemptTimestamp = attempt.timestamp;
-            }
-        }
-    }
-
-    // Delay if the previously retrieved pages + queried max pages > pages limit
-    if (totalRetrievedPages + maxPages > PAGES_LIMIT) {
-        let waitTimeInMs = MILLISECONDS_PER_PAGES_LIMIT;
-
-        if (lastAttemptTimestamp) {
-            waitTimeInMs -= (new Date() - lastAttemptTimestamp);
-            log(`Last attempt happened at ${lastAttemptTimestamp.toISOString()}. Waiting for ${waitTimeInMs} ms...`);
-        } else {
-            log(`Waiting for ${waitTimeInMs} ms...`);
-        }
-
-        await delay(waitTimeInMs);
-
-        // Empty the attempts
-        while (ATTEMPTS.length > 0) {
-            ATTEMPTS.shift();
-        }
-    }
-};
-
-/**
- * Store the last attempt
- * @author Jeremia Siahaan
- * @param {number} numOfPages
- * @returns {void}
- */
-const storeLastAttempt = (numOfPages) => {
-    ATTEMPTS.push({
-        pages: Number(numOfPages),
+    const create = numOfPages => ({
+        retrievedPages: Number(numOfPages),
         timestamp: new Date(),
     });
-};
 
-/**
- * Generate CSV text from a flight object
- * @author Jeremia Siahaan
- * @param {Object} flight
- * @param {boolean} [shouldReturnHeader]
- * @returns {string}
- */
-const generateCsv = (flight, shouldReturnHeader = false) => {
-    if (shouldReturnHeader) {
-        IDX_BY_COLUMN_KEY = {};
-    }
+    const update = () => {
+        let histIdx = 0;
 
-    const flightCsvSeed = [];
+        while (history.length > 0 && histIdx < history.length) {
+            const attemptHist = history[histIdx];
 
-    /**
-     * Insert values from the flight object into CSV seed
-     * @author Jeremia Siahaan
-     * @param {Object} flightObj 
-     * @param {[string|Number]} parentKey 
-     */
-    const insertValuesToCsvSeed = (flightObj, parentKey) => {
-        _.forEach(flightObj, (val, key) => {
-            if (_.isPlainObject(val) ||
-            (_.isArray(val) && _.some(val, v => _.isPlainObject(v) || _.isArray(v)))) {
-                return insertValuesToCsvSeed(val, key);
-            }
-
-            const columnKey = parentKey
-                ? `${parentKey}_${key}`
-                : key;
-
-            let idx = IDX_BY_COLUMN_KEY[columnKey];
-
-            if (shouldReturnHeader) {
-                idx = _.size(IDX_BY_COLUMN_KEY);
-                IDX_BY_COLUMN_KEY[columnKey] = idx;
-            }
-
-            let _val = val;
-
-            if (_.isArray(val)) {
-                _val = val.join(',');
-            }
-
-            if (_.isNumber(idx)) {
-                flightCsvSeed[idx] = _val;
+            if (new Date() - attemptHist.timestamp > MILLISECONDS_PER_PAGES_LIMIT) {
+                history.shift();
             } else {
-                idx = _.size(IDX_BY_COLUMN_KEY);
-                (flightCsvSeed[idx] || (flightCsvSeed[idx] = {}))[columnKey] = _val;
+                break;
             }
+        }
+    };
+
+    const getLast = () => {
+        update();
+
+        let totalRetrievedPages = 0;
+        let timestamp = null;
+
+        _.forEach(history, (attemptHist, idx) => {
+            totalRetrievedPages += attemptHist.retrievedPages;
+
+            if (idx >= history.length - 1) {
+                timestamp = attemptHist.timestamp;
+            }
+        });
+
+        return ({
+            timestamp,
+            totalRetrievedPages,
         });
     };
 
-    insertValuesToCsvSeed(flight);
+    const delayForRateLimit = async (maxPages) => {
+        const {
+            timestamp: lastAttemptTimestamp,
+            totalRetrievedPages,
+        } = getLast();
 
-    const headerKeys = _.chain(IDX_BY_COLUMN_KEY)
-        .keys()
-        .sortBy(key => IDX_BY_COLUMN_KEY[key])
-        .value();
+        // Delay if the previously retrieved pages + queried max pages > pages limit
+        if (totalRetrievedPages + maxPages > PAGES_LIMIT) {
+            let waitTimeInMs = MILLISECONDS_PER_PAGES_LIMIT;
 
-    _.forEach(_.range(headerKeys.length + 1), (idx) => {
-        const val = flightCsvSeed[idx];
+            if (lastAttemptTimestamp) {
+                waitTimeInMs -= (new Date() - lastAttemptTimestamp);
+                log(`Last attempt happened at ${lastAttemptTimestamp.toISOString()}. Waiting for ${waitTimeInMs} ms...`);
+            } else {
+                log(`Waiting for ${waitTimeInMs} ms...`);
+            }
 
-        if (_.isNil(val)) {
-            flightCsvSeed[idx] = '';
-        } else if (_.isPlainObject(val)) {
-            flightCsvSeed[idx] = `"${JSON.stringify(val).replace(/"/g, '""')}"`;
+            await delay(waitTimeInMs);
+
+            // Empty the attempts history
+            update();
         }
-    });
+    };
 
-    const csvRows = [];
+    const store = (numOfPages) => {
+        update();
+        history.push(create(numOfPages));
+    };
 
-    if (shouldReturnHeader) {
-        csvRows.push(`${headerKeys.join(';')};other_properties`);
-    }
-    csvRows.push(flightCsvSeed.join(';'));
-    
-    return csvRows.join('\n');
+    return {
+        create,
+        delayForRateLimit,
+        getLast,
+        store,
+        update,
+    };
 };
 
+const ATTEMPTS_HISTORY = new AttemptsHistory();
+
 /**
- * Create a collection of flights results
  * @author Jeremia Siahaan
- * @returns {Object}
+ * @constructor
  */
-const createFlightsResults = () => {
+function FlightsResults() {
     let results;
 
     switch (EXPECTED_RESULTS_SHAPE) {
@@ -201,18 +146,18 @@ const createFlightsResults = () => {
                 results.push(..._newResults);
             }
         }
-    }
+    };
 
     const value = () => results;
 
     const log = () => {
         switch (EXPECTED_RESULTS_SHAPE) {
             case RESULTS_SHAPES.objectArray: {
-                console.log(JSON.stringify(flights));
+                console.log(JSON.stringify(results));
                 break;
             }
             default: {
-                console.log(flights);
+                console.log(results);
             }
         }
     };
@@ -224,17 +169,11 @@ const createFlightsResults = () => {
     };
 };
 
-/**
- * Format flight object by adding the local times
- * @author Jeremia Siahaan
- * @param {Object} flight 
- * @returns {Object}
- */
-const standardizeFlightObject = flight => {
+function FlightResult(flight, shouldReturnHeader = false) {
     const originTimezone = flight.origin?.timezone;
     const destinationTimezone = flight.destination?.timezone;
 
-    return ({
+    let standardizedFlight = {
         ...flight,
         scheduled_out_local: flight.scheduled_out && originTimezone
             ? dayjs(flight.scheduled_out)
@@ -299,7 +238,92 @@ const standardizeFlightObject = flight => {
                 .tz(destinationTimezone)
                 .format('YYYY-MM-DDTHH:mm:ssZ')
             : flight.actual_in,
-    });
+    };
+
+    /**
+     * Generate CSV text from a flight object
+     * @author Jeremia Siahaan
+     * @param {Object} flight
+     * @returns {string}
+     */
+    const generateCsv = (flight) => {
+        if (shouldReturnHeader) {
+            IDX_BY_COLUMN_KEY = {};
+        }
+
+        const flightCsvSeed = [];
+
+        /**
+         * Insert values from the flight object into CSV seed
+         * @author Jeremia Siahaan
+         * @param {Object} flightObj 
+         * @param {[string|Number]} parentKey 
+         */
+        const insertValuesToCsvSeed = (flightObj, parentKey) => {
+            _.forEach(flightObj, (val, key) => {
+                if (_.isPlainObject(val) ||
+                (_.isArray(val) && _.some(val, v => _.isPlainObject(v) || _.isArray(v)))) {
+                    return insertValuesToCsvSeed(val, key);
+                }
+
+                const columnKey = parentKey
+                    ? `${parentKey}_${key}`
+                    : key;
+
+                let idx = IDX_BY_COLUMN_KEY[columnKey];
+
+                if (shouldReturnHeader) {
+                    idx = _.size(IDX_BY_COLUMN_KEY);
+                    IDX_BY_COLUMN_KEY[columnKey] = idx;
+                }
+
+                let _val = val;
+
+                if (_.isArray(val)) {
+                    _val = val.join(',');
+                }
+
+                if (_.isNumber(idx)) {
+                    flightCsvSeed[idx] = _val;
+                } else {
+                    idx = _.size(IDX_BY_COLUMN_KEY);
+                    (flightCsvSeed[idx] || (flightCsvSeed[idx] = {}))[columnKey] = _val;
+                }
+            });
+        };
+
+        insertValuesToCsvSeed(flight);
+
+        const headerKeys = _.chain(IDX_BY_COLUMN_KEY)
+            .keys()
+            .sortBy(key => IDX_BY_COLUMN_KEY[key])
+            .value();
+
+        _.forEach(_.range(headerKeys.length + 1), (idx) => {
+            const val = flightCsvSeed[idx];
+
+            if (_.isNil(val)) {
+                flightCsvSeed[idx] = '';
+            } else if (_.isPlainObject(val)) {
+                flightCsvSeed[idx] = `"${JSON.stringify(val).replace(/"/g, '""')}"`;
+            }
+        });
+
+        const csvRows = [];
+
+        if (shouldReturnHeader) {
+            csvRows.push(`${headerKeys.join(';')};other_properties`);
+        }
+        csvRows.push(flightCsvSeed.join(';'));
+        
+        return csvRows.join('\n');
+    };
+
+    if (EXPECTED_RESULTS_SHAPE === RESULTS_SHAPES.csv) {
+        standardizedFlight = generateCsv(standardizedFlight);
+    }
+    
+    return { value: () => standardizedFlight };
 };
 
 /**
@@ -343,14 +367,14 @@ const getFlights = async (
     const queryString = new URLSearchParams(queryParams).toString();
     let _urlPath = `${urlPath}?${queryString}`;
 
-    const flights = createFlightsResults();
+    const flights = new FlightsResults();
 
     let isNextLinkAvailable = true;
     let shouldRetry = false;
     let iterationIdx = 0;
 
     while (isNextLinkAvailable || shouldRetry) {
-        await delayForRateLimit(queryParams.max_pages);
+        await ATTEMPTS_HISTORY.delayForRateLimit(queryParams.max_pages);
 
         let response;
 
@@ -379,7 +403,7 @@ const getFlights = async (
 
             if (err.response?.status === 429) {
                 shouldRetry = true;
-                storeLastAttempt(PAGES_LIMIT);
+                ATTEMPTS_HISTORY.store(PAGES_LIMIT);
             } else {
                 shouldRetry = false;
             }
@@ -388,27 +412,23 @@ const getFlights = async (
         if (response?.data) {
             shouldRetry = false;
             const { data: responseData } = response;
-            storeLastAttempt(responseData.num_pages);
+            ATTEMPTS_HISTORY.store(responseData.num_pages);
 
-            const thisIterationFlights = createFlightsResults();
+            const thisIterationFlights = new FlightsResults();
 
             _.forEach(flightsKeys, (flightsKey, keyIdx) => {
                 log(`Got ${responseData[flightsKey]?.length || 0} ${_.lowerCase(flightsKey)} flights from path ${_urlPath}!`);
                 _.forEach(responseData[flightsKey], (flight, flightIdx) => {
                     try {
-                        let standardizedFlight = standardizeFlightObject(flight);
+                        const flightRes = new FlightResult(
+                            flight,
+                            opts?.shouldReturnHeader
+                                && iterationIdx === 0
+                                && keyIdx === 0
+                                && flightIdx === 0,
+                        );
 
-                        if (EXPECTED_RESULTS_SHAPE === RESULTS_SHAPES.csv) {
-                            standardizedFlight = generateCsv(
-                                standardizedFlight,
-                                opts?.shouldReturnHeader
-                                    && iterationIdx === 0
-                                    && keyIdx === 0
-                                    && flightIdx === 0,
-                            );
-                        }
-
-                        thisIterationFlights.push(standardizedFlight);
+                        thisIterationFlights.push(flightRes.value());
                     } catch (err) {
                         log(`Error when standardizing object ${JSON.stringify(flight)}. Error: ${err.stack || JSON.stringify(err)}`);
                     }
@@ -419,7 +439,7 @@ const getFlights = async (
                 thisIterationFlights.log();
             }
 
-            flights.push(thisIterationFlights);
+            flights.push(thisIterationFlights.value());
             iterationIdx++;
 
             if (responseData.links?.next) {
