@@ -1,3 +1,4 @@
+require('dot')
 const _ = require('lodash');
 const fs = require('fs');
 const dayjs = require('dayjs');
@@ -133,8 +134,8 @@ Promise
             if (Number(airport.Rank) > AIRPORT_COUNT) {
                 return null;
             }
-            console.log(`[${new Date().toISOString()}] Fetching data for airport ${airport.ICAO} (IATA: ${airport.IATA}, city: ${airport.City})...`);
 
+            console.log(`[${new Date().toISOString()}] Fetching data for airport ${airport.ICAO} (IATA: ${airport.IATA}, city: ${airport.City})...`);
 
             const departureFlights = await aeroApi4Helpers.getFlightsDepartedFromAirport(
                 airport.ICAO,
@@ -159,7 +160,7 @@ Promise
             });
         }
 
-        airlines.forEach(async (airline) => {
+        for (const airline of airlines) {
             console.log(`[${new Date().toISOString()}] Fetching data for airline ${airline.ICAO} (IATA: ${airline.IATA}, name: ${airline.Name})...`);
 
             const arrivedFlights = await aeroApi4Helpers.getOperatorArrivedFlights(airline.ICAO, queryParams);
@@ -176,10 +177,10 @@ Promise
             _.forEach(scheduledFlights, (flight) => {
                 makeCsvSeed(flight, false);
             });
-        });
+        }
     })
     .then(() => {
-        console.log('[${new Date().toISOString()}] Done fetching all flights data!');
+        console.log(`[${new Date().toISOString()}] Done fetching all flights data!`);
     })
     .catch((err) => {
         console.error(`[${new Date().toISOString()}] Error when fetching flight data from AeroAPI4. Error: ${err.stack || err}`);
