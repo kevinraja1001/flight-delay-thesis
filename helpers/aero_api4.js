@@ -187,6 +187,62 @@ const printFlightsOnLog = (flights) => {
 };
 
 /**
+ * Initiate flights results
+ * @author Jeremia Siahaan
+ * @returns {string|Object[]}
+ */
+const initiateFlightsResults = () => {
+    switch (EXPECTED_RESULTS_SHAPE) {
+        case RESULTS_SHAPES.csv: {
+            return '';
+        }
+        default: {
+            return [];
+        }
+    }
+};
+
+/**
+ * @author Jeremia Siahaan
+ * @param {string|Object} flightRes 
+ * @param {string|Object[]} flights 
+ * @returns {string|Object[]}
+ */
+const pushFlightResultToFlightsResults = (flightRes, flights) => {
+    switch (EXPECTED_RESULTS_SHAPE) {
+        case RESULTS_SHAPES.csv: {
+            flights += `${flightRes}\n`;
+            break;
+        }
+        default: {
+            flights.push(flightRes);
+        }
+    }
+
+    return flights;
+};
+
+/**
+ * @author Jeremia Siahaan
+ * @param {string|Object[]} flights 
+ * @param {string|Object[]} mainFlights 
+ * @returns {string|Object[]}
+ */
+const pushFlightsResultsToMainFlightsResults = (flights, mainFlights) => {
+    switch (EXPECTED_RESULTS_SHAPE) {
+        case RESULTS_SHAPES.csv: {
+            mainFlights += `${flights}\n`;
+            break;
+        }
+        default: {
+            mainFlights.push(...flights);
+        }
+    }
+
+    return mainFlights;
+};
+
+/**
  * Format flight object by adding the local times
  * @author Jeremia Siahaan
  * @param {Object} flight 
@@ -305,17 +361,7 @@ const getFlights = async (
     const queryString = new URLSearchParams(queryParams).toString();
     let _urlPath = `${urlPath}?${queryString}`;
 
-    let flights;
-
-    switch (EXPECTED_RESULTS_SHAPE) {
-        case RESULTS_SHAPES.csv: {
-            flights = '';
-            break;
-        }
-        default: {
-            flights = [];
-        }
-    }
+    const flights = initiateFlightsResults();
 
     let isNextLinkAvailable = true;
     let shouldRetry = false;
@@ -362,35 +408,36 @@ const getFlights = async (
             const { data: responseData } = response;
             storeLastAttempt(responseData.num_pages);
 
-            _.forEach(flightsKeys, (flightsKey, flightIdx) => {
-                console.log(`[${new Date().toISOString()}] Got ${responseData[flightsKey]?.length || 0} ${_.lowerCase(flightsKey)} flights from path ${_urlPath}!`);
-                _.forEach(responseData[flightsKey], (flight) => {
-                    try {
-                        const standardizedFlight = standardizeFlightObject(flight);
-                        
-                        switch (EXPECTED_RESULTS_SHAPE) {
-                            case RESULTS_SHAPES.csv: {
-                                const flightCsv = generateCsv(
-                                    standardizedFlight,
-                                    opts?.shouldReturnHeader && iterationIdx === 0 && flightIdx === 0,
-                                );
+            const thisIterationFlights = initiateFlightsResults();
 
-                                flights += `${flightCsv}\n`;
-                                break;
-                            }
-                            default: {
-                                flights.push(standardizedFlight);
-                            }
+            _.forEach(flightsKeys, (flightsKey, keyIdx) => {
+                console.log(`[${new Date().toISOString()}] Got ${responseData[flightsKey]?.length || 0} ${_.lowerCase(flightsKey)} flights from path ${_urlPath}!`);
+                _.forEach(responseData[flightsKey], (flight, flightIdx) => {
+                    try {
+                        let standardizedFlight = standardizeFlightObject(flight);
+
+                        if (EXPECTED_RESULTS_SHAPE === RESULTS_SHAPES.csv) {
+                            standardizedFlight = generateCsv(
+                                standardizedFlight,
+                                opts?.shouldReturnHeader
+                                    && iterationIdx === 0
+                                    && keyIdx === 0
+                                    && flightIdx === 0,
+                            );
                         }
+                        
+                        pushFlightResultToFlightsResults(standardizedFlight, thisIterationFlights);
                     } catch (err) {
                         console.log(`[${new Date().toISOString()}] Error when standardizing object ${JSON.stringify(flight)}. Error: ${err.stack || JSON.stringify(err)}`);
                     }
                 });
-
-                if (SHOULD_PRINT_RESULT_ON_LOG) {
-                    printFlightsOnLog(flights);
-                }
             });
+
+            if (SHOULD_PRINT_RESULT_ON_LOG) {
+                printFlightsOnLog(thisIterationFlights);
+            }
+
+            pushFlightsResultsToMainFlightsResults(thisIterationFlights, flights);
             iterationIdx++;
 
             if (responseData.links?.next) {
