@@ -204,46 +204,6 @@ const initiateFlightsResults = () => {
 };
 
 /**
- * @author Jeremia Siahaan
- * @param {string|Object} flightRes 
- * @param {string|Object[]} flights 
- * @returns {string|Object[]}
- */
-const pushFlightResultToFlightsResults = (flightRes, flights) => {
-    switch (EXPECTED_RESULTS_SHAPE) {
-        case RESULTS_SHAPES.csv: {
-            flights += `${flightRes}\n`;
-            break;
-        }
-        default: {
-            flights.push(flightRes);
-        }
-    }
-
-    return flights;
-};
-
-/**
- * @author Jeremia Siahaan
- * @param {string|Object[]} flights 
- * @param {string|Object[]} mainFlights 
- * @returns {string|Object[]}
- */
-const pushFlightsResultsToMainFlightsResults = (flights, mainFlights) => {
-    switch (EXPECTED_RESULTS_SHAPE) {
-        case RESULTS_SHAPES.csv: {
-            mainFlights += `${flights}\n`;
-            break;
-        }
-        default: {
-            mainFlights.push(...flights);
-        }
-    }
-
-    return mainFlights;
-};
-
-/**
  * Format flight object by adding the local times
  * @author Jeremia Siahaan
  * @param {Object} flight 
@@ -417,17 +377,23 @@ const getFlights = async (
                     try {
                         let standardizedFlight = standardizeFlightObject(flight);
 
-                        if (EXPECTED_RESULTS_SHAPE === RESULTS_SHAPES.csv) {
-                            standardizedFlight = generateCsv(
-                                standardizedFlight,
-                                opts?.shouldReturnHeader
-                                    && iterationIdx === 0
-                                    && keyIdx === 0
-                                    && flightIdx === 0,
-                            );
+                        switch (EXPECTED_RESULTS_SHAPE) {
+                            case RESULTS_SHAPES.csv: {
+                                standardizedFlight = generateCsv(
+                                    standardizedFlight,
+                                    opts?.shouldReturnHeader
+                                        && iterationIdx === 0
+                                        && keyIdx === 0
+                                        && flightIdx === 0,
+                                );
+
+                                thisIterationFlights += `${standardizedFlight}\n`;
+                                break;
+                            }
+                            default: {
+                                thisIterationFlights.push(standardizedFlight);
+                            }
                         }
-                        
-                        pushFlightResultToFlightsResults(standardizedFlight, thisIterationFlights);
                     } catch (err) {
                         log(`Error when standardizing object ${JSON.stringify(flight)}. Error: ${err.stack || JSON.stringify(err)}`);
                     }
@@ -438,7 +404,15 @@ const getFlights = async (
                 printFlightsOnLog(thisIterationFlights);
             }
 
-            pushFlightsResultsToMainFlightsResults(thisIterationFlights, flights);
+            switch (EXPECTED_RESULTS_SHAPE) {
+                case RESULTS_SHAPES.csv: {
+                    flights += `${thisIterationFlights}\n`;
+                    break;
+                }
+                default: {
+                    flights.push(...thisIterationFlights);
+                }
+            }
             iterationIdx++;
 
             if (responseData.links?.next) {
