@@ -14,19 +14,81 @@ const {
 
 const PAGES_LIMIT = 10;
 const MILLISECONDS_PER_PAGES_LIMIT = 60 * 1000;
+const ATTEMPTS = [];
 
-const LAST_ATTEMPT = {
-    pages: 0,
-    timestamp: null,
+/**
+ * Delay for given milliseconds
+ * @param {number} ms 
+ * @returns {Promise}
+ */
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Delay for handling the rate limit of Aero API 4
+ * @author Jeremia Siahaan
+ * @param {number} maxPages
+ * @return {Promise}
+ */
+const delayForRateLimit = async (maxPages) => {
+    let totalRetrievedPages = 0;
+    let lastAttemptTimestamp;
+    let attemptIdx = 0;
+
+    while (ATTEMPTS.length > 0 && attemptIdx < ATTEMPTS.length) {
+        const attempt = ATTEMPTS[attemptIdx];
+
+        if (new Date() - attempt.timestamp > MILLISECONDS_PER_PAGES_LIMIT) {
+            ATTEMPTS.shift();
+        } else {
+            totalRetrievedPages += attempt.pages;
+            attemptIdx++;
+
+            if (attemptIdx >= ATTEMPTS.length) {
+                lastAttemptTimestamp = attempt.timestamp;
+            }
+        }
+    }
+
+    // Delay if the previously retrieved pages + queried max pages > pages limit
+    if (totalRetrievedPages + maxPages > PAGES_LIMIT) {
+        let waitTimeInMs = MILLISECONDS_PER_PAGES_LIMIT;
+
+        if (lastAttemptTimestamp) {
+            waitTimeInMs -= (new Date() - lastAttemptTimestamp);
+            console.log(`[${new Date().toISOString()}] Last attempt happened at ${lastAttemptTimestamp.toISOString()}. Waiting for ${waitTimeInMs} ms...`);
+        } else {
+            console.log(`[${new Date().toISOString()}] Waiting for ${waitTimeInMs} ms...`);
+        }
+
+        await delay(waitTimeInMs);
+
+        // Empty the attempts
+        while (ATTEMPTS.length > 0) {
+            ATTEMPTS.shift();
+        }
+    }
 };
 
 /**
- * Format flights objects array
+ * Store the last attempt
  * @author Jeremia Siahaan
- * @param {Object[]} flights 
- * @returns {Object[]}
+ * @param {number} numOfPages
+ * @returns {void}
  */
-const formatFlights = flights => _.map(flights, flight => {
+const storeLastAttempt = (numOfPages) => {
+    ATTEMPTS.push({
+        pages: Number(numOfPages),
+        timestamp: new Date(),
+    });
+};
+
+/**
+ * Format flight object by adding the local times
+ * @author Jeremia Siahaan
+ * @param {Object} flight 
+ * @returns {Object}
+ */
+const standardizeFlightObject = flight => flight => {
     const originTimezone = flight.origin?.timezone;
     const destinationTimezone = flight.destination?.timezone;
 
@@ -96,13 +158,13 @@ const formatFlights = flights => _.map(flights, flight => {
                 .format('YYYY-MM-DDTHH:mm:ssZ')
             : flight.actual_in,
     });
-});
+};
 
 /**
  * Send HTTP GET request to AeroAPI 4
  * @author Jeremia Siahaan
  * @param {string} urlPath 
- * @returns {Object}
+ * @returns {Promise<Axios>}
  */
 const sendRequest = (urlPath) => {
     const apiUrl = `${AERO_API_4_URL}${urlPath}`;
@@ -116,19 +178,12 @@ const sendRequest = (urlPath) => {
 };
 
 /**
- * Delay for given milliseconds
- * @param {number} ms 
- * @returns {Promise}
- */
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-/**
  * Get flights from AeroAPI
  * @author Jeremia Siahaan
  * @param {string} urlPath 
  * @param {Object} [queryParams]
  * @param {string[]} [flightsKeys] 
- * @returns {Array<Object>}
+ * @returns {Promise<Array<Object>>}
  */
 const getFlights = async (urlPath, queryParams = {}, flightsKeys = []) => {
     let pageCount = 0;
@@ -144,17 +199,7 @@ const getFlights = async (urlPath, queryParams = {}, flightsKeys = []) => {
     let isNextLinkAvailable = true;
 
     while (isNextLinkAvailable) {
-        if (LAST_ATTEMPT.pages + queryParams.max_pages > PAGES_LIMIT) {
-            let waitTimeInMs = MILLISECONDS_PER_PAGES_LIMIT;
-
-            if (LAST_ATTEMPT.timestamp) {
-                waitTimeInMs -= new Date() - LAST_ATTEMPT.timestamp;
-            }
-            
-            console.log(`[${new Date().toISOString()}] Last attempt happened at ${LAST_ATTEMPT.timestamp.toISOString()}. Waiting for ${waitTimeInMs} ms...`);
-            await delay(waitTimeInMs);
-            LAST_ATTEMPT.pages = 0;
-        }
+        await delayForRateLimit(queryParams.max_pages);
 
         let response;
 
@@ -185,13 +230,18 @@ const getFlights = async (urlPath, queryParams = {}, flightsKeys = []) => {
         if (response?.data) {
             const { data: responseData } = response;
             _.forEach(flightsKeys, (flightsKey) => {
-                console.log(`[${new Date().toISOString()}] Get ${responseData[flightsKey]?.length || 0} ${flightsKey} flights from path ${_urlPath}!`);
-                flights.push(...formatFlights(responseData[flightsKey]));
+                console.log(`[${new Date().toISOString()}] Got ${responseData[flightsKey]?.length || 0} ${flightsKey} flights from path ${_urlPath}!`);
+                _.forEach(responseData[flightsKey], (flight) => {
+                    try {
+                        const standardizedFlight = standardizeFlightObject(flight);
+                        flights.push(standardizedFlight);
+                    } catch (err) {
+                        console.log(`[${new Date().toISOString()}] Error when standardizing object ${JSON.stringify(flight)}. Error: ${err.stack || JSON.stringify(err)}`);
+                    }
+                });
             });
             
-
-            LAST_ATTEMPT.pages += Number(responseData.num_pages);
-            LAST_ATTEMPT.timestamp = new Date();
+            storeLastAttempt(responseData.num_pages);
 
             if (responseData.links?.next) {
                 _urlPath = responseData.links.next;
@@ -212,7 +262,7 @@ const getFlights = async (urlPath, queryParams = {}, flightsKeys = []) => {
  * @author Jeremia Siahaan
  * @param {string} originAirportCode 
  * @param {Object} queryParams 
- * @returns {Array<Object>}
+ * @returns {Promise<Array<Object>>}
  */
 const getFlightsDepartedFromAirport = (originAirportCode, queryParams) => getFlights(
     `/airports/${originAirportCode}/flights/departures`,
@@ -225,7 +275,7 @@ const getFlightsDepartedFromAirport = (originAirportCode, queryParams) => getFli
  * @author Jeremia Siahaan
  * @param {string} originAirportCode 
  * @param {Object} queryParams 
- * @returns {Array<Object>}
+ * @returns {Promise<Array<Object>>}
  */
 const getFutureFlightsDepartingFromAirport = (originAirportCode, queryParams) => getFlights(
     `/airports/${originAirportCode}/flights/scheduled_departures`,
@@ -238,7 +288,7 @@ const getFutureFlightsDepartingFromAirport = (originAirportCode, queryParams) =>
  * @author Jeremia Siahaan
  * @param {string} originAirportCode 
  * @param {Object} queryParams 
- * @returns {Array<Object>}
+ * @returns {Promise<Array<Object>>}
  */
 const getHistoricalFlightsDepartedFromAirport = (originAirportCode, queryParams) => getFlights(
     `/history/airports/${originAirportCode}/flights/departures`,
@@ -251,7 +301,7 @@ const getHistoricalFlightsDepartedFromAirport = (originAirportCode, queryParams)
  * @author Jeremia Siahaan
  * @param {string} airlineCode 
  * @param {Object} queryParams 
- * @returns {Array<Object>}
+ * @returns {Promise<Array<Object>>}
  */
 const getOperatorFlights = (airlineCode, queryParams) => getFlights(
     `/operators/${airlineCode}/flights`,
@@ -264,7 +314,7 @@ const getOperatorFlights = (airlineCode, queryParams) => getFlights(
  * @author Jeremia Siahaan
  * @param {string} airlineCode 
  * @param {Object} queryParams 
- * @returns {Array<Object>}
+ * @returns {Promise<Array<Object>>}
  */
 const getOperatorArrivedFlights = (airlineCode, queryParams) => getFlights(
     `/operators/${airlineCode}/flights/arrivals`,
@@ -277,7 +327,7 @@ const getOperatorArrivedFlights = (airlineCode, queryParams) => getFlights(
  * @author Jeremia Siahaan
  * @param {string} airlineCode 
  * @param {Object} queryParams 
- * @returns {Array<Object>}
+ * @returns {Promise<Array<Object>>}
  */
 const getOperatorEnRouteFlights = (airlineCode, queryParams) => getFlights(
     `/operators/${airlineCode}/flights/enroute`,
@@ -290,7 +340,7 @@ const getOperatorEnRouteFlights = (airlineCode, queryParams) => getFlights(
  * @author Jeremia Siahaan
  * @param {string} airlineCode 
  * @param {Object} queryParams 
- * @returns {Array<Object>}
+ * @returns {Promise<Array<Object>>}
  */
 const getOperatorScheduledFlights = (airlineCode, queryParams) => getFlights(
     `/operators/${airlineCode}/flights/scheduled`,
@@ -303,7 +353,7 @@ const getOperatorScheduledFlights = (airlineCode, queryParams) => getFlights(
  * @author Jeremia Siahaan
  * @param {string} airlineCode 
  * @param {Object} queryParams 
- * @returns {Array<Object>}
+ * @returns {Promise<Array<Object>>}
  */
 const getHistoricalOperatorFlights = (airlineCode, queryParams) => getFlights(
     `/history/operators/${airlineCode}/flights`,

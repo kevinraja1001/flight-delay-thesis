@@ -1,4 +1,3 @@
-require('dot')
 const _ = require('lodash');
 const fs = require('fs');
 const dayjs = require('dayjs');
@@ -12,18 +11,27 @@ dayjs.extend(timezone);
 const aeroApi4Helpers = require('./helpers/aero_api4');
 
 const AIRPORT_COUNT = 10;
-const START_DATE = '2026-05-18';
-const END_DATE = '2026-05-21';
-const idxByColumnKey = {};
+const START_DATE_TIME = dayjs
+    .tz('2026-05-18 00:00:00', 'Australia/Perth')
+    .startOf('day')
+    .utc()
+    .format();
+const END_DATE_TIME = dayjs
+    .tz('2026-05-24 23:59:59', 'Australia/Perth')
+    .add(1, 'day')
+    .startOf('day')
+    .utc()
+    .format();
+const IDX_BY_COLUMN_KEY = {};
+let CSV_TEXT = '';
 
 /**
- * Convert a flight object into an array of values
+ * Create a CSV text generator from a flight object
  * @author Jeremia Siahaan
- * @param {Object} flight
- * @param {boolean} shouldMakeHeader
- * @returns {Array<String|Number|Boolean>}
+ * @param {boolean} shouldReturnHeader
+ * @returns {Function}
  */
-const makeCsvSeed = (flight, shouldMakeHeader) => {
+const createCsvTextGenerator = (shouldReturnHeader = false) => (flight) => {
     const flightCsvSeed = [];
 
     /**
@@ -43,11 +51,11 @@ const makeCsvSeed = (flight, shouldMakeHeader) => {
                 ? `${parentKey}_${key}`
                 : key;
 
-            let idx = idxByColumnKey[columnKey];
+            let idx = IDX_BY_COLUMN_KEY[columnKey];
 
             if (shouldMakeHeader) {
-                idx = _.size(idxByColumnKey);
-                idxByColumnKey[columnKey] = idx;
+                idx = _.size(IDX_BY_COLUMN_KEY);
+                IDX_BY_COLUMN_KEY[columnKey] = idx;
             }
 
             let _val = val;
@@ -59,7 +67,7 @@ const makeCsvSeed = (flight, shouldMakeHeader) => {
             if (_.isNumber(idx)) {
                 flightCsvSeed[idx] = _val;
             } else {
-                idx = _.size(idxByColumnKey);
+                idx = _.size(IDX_BY_COLUMN_KEY);
                 (flightCsvSeed[idx] || (flightCsvSeed[idx] = {}))[columnKey] = _val;
             }
         });
@@ -67,14 +75,10 @@ const makeCsvSeed = (flight, shouldMakeHeader) => {
 
     insertValuesToCsvSeed(flight);
 
-    const headerKeys = _.chain(idxByColumnKey)
+    const headerKeys = _.chain(IDX_BY_COLUMN_KEY)
         .keys()
-        .sortBy(key => idxByColumnKey[key])
+        .sortBy(key => IDX_BY_COLUMN_KEY[key])
         .value();
-
-    if (shouldMakeHeader) {        
-        console.log(`${headerKeys.join(';')};other_properties`);
-    }
 
     _.forEach(_.range(headerKeys.length + 1), (idx) => {
         const val = flightCsvSeed[idx];
@@ -86,11 +90,40 @@ const makeCsvSeed = (flight, shouldMakeHeader) => {
         }
     });
 
-    console.log(flightCsvSeed.join(';'));
+    const csvRows = [];
+
+    if (shouldReturnHeader) {
+        csvRows.push(`${headerKeys.join(';')};other_properties`);
+    }
+    csvRows.push(flightCsvSeed.join(';'));
+    
+    return csvRows.join('\n');
+};
+
+/**
+ * Convert all flight objects into CSV text and push them into collective CSV text
+ * @author Jeremia Siahaan
+ * @param {Object[]} flights 
+ * @param {boolean} shouldPrintHeader
+ * @returns {void}
+ */
+const pushFlightsToCsvText = (flights, shouldPrintHeader) => {
+    const generateCsv = createCsvTextGenerator(false);
+
+    _.forEach(departureFlights, (flight, idx) => {
+        let _generateCsv = shouldPrintHeader && idx === 0
+            ? createCsvTextGenerator(true)
+            : generateCsv;
+        const csvText = _generateCsv(flight);
+        console.log(csvText);
+        // TODO: uncomment if we want to collect all CSV texts
+        // CSV_TEXT += `${csvText}\n`;
+    });
 };
 
 Promise
     .try(async () => {
+        console.log(`[${new Date().toISOString()}] Reading airports dataset...`);
         const airportDataParser = fs
             .createReadStream('./datasets/top-20-busiest-australian-airports.csv')
             .pipe(parse({
@@ -105,6 +138,7 @@ Promise
             airports.push(record);
         }
 
+        console.log(`[${new Date().toISOString()}] Reading airlines dataset...`);
         const airlineDataParser = fs
             .createReadStream('./datasets/top-australian-airlines.csv')
             .pipe(parse({
@@ -120,17 +154,12 @@ Promise
         };
 
         const queryParams = {
-            start: dayjs
-                .utc(START_DATE)
-                .format(),
-            end: dayjs
-                .utc(END_DATE)
-                .add(1, 'day')
-                .format(),
-            max_pages: 10,
+            start: START_DATE_TIME,
+            end: END_DATE_TIME,
+            max_pages: 1,
         };
 
-        for (const [airportIdx, airport] of airports.entries()) {
+        for await (const [airportIdx, airport] of airports.entries()) {
             if (Number(airport.Rank) > AIRPORT_COUNT) {
                 return null;
             }
@@ -144,9 +173,7 @@ Promise
                     type: 'Airline',
                 },
             );
-            _.forEach(departureFlights, (flight, idx) => {
-                makeCsvSeed(flight, airportIdx === 0 && idx === 0);
-            });
+            pushFlightsToCsvText(departureFlights, airportIdx === 0);
 
             const scheduledDepartureFlights = await aeroApi4Helpers.getFutureFlightsDepartingFromAirport(
                 airport.ICAO,
@@ -155,28 +182,20 @@ Promise
                     type: 'Airline',
                 },
             );
-            _.forEach(scheduledDepartureFlights, (flight) => {
-                makeCsvSeed(flight, false);
-            });
+            pushFlightsToCsvText(scheduledDepartureFlights, false);
         }
 
-        for (const airline of airlines) {
+        for await (const airline of airlines) {
             console.log(`[${new Date().toISOString()}] Fetching data for airline ${airline.ICAO} (IATA: ${airline.IATA}, name: ${airline.Name})...`);
 
             const arrivedFlights = await aeroApi4Helpers.getOperatorArrivedFlights(airline.ICAO, queryParams);
-            _.forEach(arrivedFlights, (flight) => {
-                makeCsvSeed(flight, false);
-            });
+            pushFlightsToCsvText(arrivedFlights, false);
 
             const enRouteFlights = await aeroApi4Helpers.getOperatorEnRouteFlights(airline.ICAO, queryParams);
-            _.forEach(enRouteFlights, (flight) => {
-                makeCsvSeed(flight, false);
-            });
+            pushFlightsToCsvText(enRouteFlights, false);
 
             const scheduledFlights = await aeroApi4Helpers.getOperatorScheduledFlights(airline.ICAO, queryParams);
-            _.forEach(scheduledFlights, (flight) => {
-                makeCsvSeed(flight, false);
-            });
+            pushFlightsToCsvText(scheduledFlights, false);
         }
     })
     .then(() => {
