@@ -197,8 +197,9 @@ const getFlights = async (urlPath, queryParams = {}, flightsKeys = []) => {
 
     const flights = [];
     let isNextLinkAvailable = true;
+    let shouldRetry = false;
 
-    while (isNextLinkAvailable) {
+    while (isNextLinkAvailable || shouldRetry) {
         await delayForRateLimit(queryParams.max_pages);
 
         let response;
@@ -225,9 +226,17 @@ const getFlights = async (urlPath, queryParams = {}, flightsKeys = []) => {
             errorMessage += ` Config: ${JSON.stringify(err.config)}.`;
             console.log(`[${new Date().toISOString()}] ${errorMessage}`);
             isNextLinkAvailable = false;
+
+            if (err.response?.status === 429) {
+                shouldRetry = true;
+                storeLastAttempt(PAGES_LIMIT);
+            } else {
+                shouldRetry = false;
+            }
         }
 
         if (response?.data) {
+            shouldRetry = false;
             const { data: responseData } = response;
             _.forEach(flightsKeys, (flightsKey) => {
                 console.log(`[${new Date().toISOString()}] Got ${responseData[flightsKey]?.length || 0} ${flightsKey} flights from path ${_urlPath}!`);
