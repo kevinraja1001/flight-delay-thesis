@@ -53,7 +53,7 @@ const createCsvTextGenerator = (shouldReturnHeader = false) => (flight) => {
 
             let idx = IDX_BY_COLUMN_KEY[columnKey];
 
-            if (shouldMakeHeader) {
+            if (shouldReturnHeader) {
                 idx = _.size(IDX_BY_COLUMN_KEY);
                 IDX_BY_COLUMN_KEY[columnKey] = idx;
             }
