@@ -1,9 +1,11 @@
 const _ = require('lodash');
 const axios = require('axios');
 const dayjs = require('dayjs');
-
-const utc = require('dayjs/plugin/utc');
 const timezone = require('dayjs/plugin/timezone');
+const utc = require('dayjs/plugin/utc');
+
+const { RESULTS_SHAPES } = require('../constants');
+
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
@@ -15,6 +17,10 @@ const {
 const PAGES_LIMIT = 10;
 const MILLISECONDS_PER_PAGES_LIMIT = 60 * 1000;
 const ATTEMPTS = [];
+let IDX_BY_COLUMN_KEY = {};
+let EXPECTED_RESULTS_SHAPE = RESULTS_SHAPES.objectArray;
+let SHOULD_PRINT_RESULT_ON_LOG = false;
+let CSV_TEXT = '';
 
 /**
  * Delay for given milliseconds
@@ -80,6 +86,104 @@ const storeLastAttempt = (numOfPages) => {
         pages: Number(numOfPages),
         timestamp: new Date(),
     });
+};
+
+/**
+ * Generate CSV text from a flight object
+ * @author Jeremia Siahaan
+ * @param {Object} flight
+ * @param {boolean} [shouldReturnHeader]
+ * @returns {string}
+ */
+const generateCsv = (flight, shouldReturnHeader = false) => {
+    if (shouldReturnHeader) {
+        IDX_BY_COLUMN_KEY = {};
+    }
+
+    const flightCsvSeed = [];
+
+    /**
+     * Insert values from the flight object into CSV seed
+     * @author Jeremia Siahaan
+     * @param {Object} flightObj 
+     * @param {[string|Number]} parentKey 
+     */
+    const insertValuesToCsvSeed = (flightObj, parentKey) => {
+        _.forEach(flightObj, (val, key) => {
+            if (_.isPlainObject(val) ||
+            (_.isArray(val) && _.some(val, v => _.isPlainObject(v) || _.isArray(v)))) {
+                return insertValuesToCsvSeed(val, key);
+            }
+
+            const columnKey = parentKey
+                ? `${parentKey}_${key}`
+                : key;
+
+            let idx = IDX_BY_COLUMN_KEY[columnKey];
+
+            if (shouldReturnHeader) {
+                idx = _.size(IDX_BY_COLUMN_KEY);
+                IDX_BY_COLUMN_KEY[columnKey] = idx;
+            }
+
+            let _val = val;
+
+            if (_.isArray(val)) {
+                _val = val.join(',');
+            }
+
+            if (_.isNumber(idx)) {
+                flightCsvSeed[idx] = _val;
+            } else {
+                idx = _.size(IDX_BY_COLUMN_KEY);
+                (flightCsvSeed[idx] || (flightCsvSeed[idx] = {}))[columnKey] = _val;
+            }
+        });
+    };
+
+    insertValuesToCsvSeed(flight);
+
+    const headerKeys = _.chain(IDX_BY_COLUMN_KEY)
+        .keys()
+        .sortBy(key => IDX_BY_COLUMN_KEY[key])
+        .value();
+
+    _.forEach(_.range(headerKeys.length + 1), (idx) => {
+        const val = flightCsvSeed[idx];
+
+        if (_.isNil(val)) {
+            flightCsvSeed[idx] = '';
+        } else if (_.isPlainObject(val)) {
+            flightCsvSeed[idx] = `"${JSON.stringify(val).replace(/"/g, '""')}"`;
+        }
+    });
+
+    const csvRows = [];
+
+    if (shouldReturnHeader) {
+        csvRows.push(`${headerKeys.join(';')};other_properties`);
+    }
+    csvRows.push(flightCsvSeed.join(';'));
+    
+    return csvRows.join('\n');
+};
+
+/**
+ * Print flights on log
+ * @author Jeremia Siahaan
+ * @param {Object[]|string} flights 
+ * @returns {void}
+ */
+const printFlightsOnLog = (flights) => {
+    switch (EXPECTED_RESULTS_SHAPE) {
+        case RESULTS_SHAPES.objectArray: {
+            console.log(JSON.stringify(flights));
+            break;
+        }
+        default: {
+            console.log(flights);
+        }
+    }
 };
 
 /**
@@ -183,9 +287,15 @@ const sendRequest = (urlPath) => {
  * @param {string} urlPath 
  * @param {Object} [queryParams]
  * @param {string[]} [flightsKeys] 
- * @returns {Promise<Array<Object>>}
+ * @param {Object} [opts]
+ * @returns {Promise<Object[]|string>}
  */
-const getFlights = async (urlPath, queryParams = {}, flightsKeys = []) => {
+const getFlights = async (
+    urlPath,
+    queryParams = {},
+    flightsKeys = [],
+    opts = {},
+) => {
     let pageCount = 0;
 
     if (queryParams.max_pages && queryParams.max_pages > PAGES_LIMIT) {
@@ -195,9 +305,21 @@ const getFlights = async (urlPath, queryParams = {}, flightsKeys = []) => {
     const queryString = new URLSearchParams(queryParams).toString();
     let _urlPath = `${urlPath}?${queryString}`;
 
-    const flights = [];
+    let flights;
+
+    switch (EXPECTED_RESULTS_SHAPE) {
+        case RESULTS_SHAPES.csv: {
+            flights = '';
+            break;
+        }
+        default: {
+            flights = [];
+        }
+    }
+
     let isNextLinkAvailable = true;
     let shouldRetry = false;
+    let iterationIdx = 0;
 
     while (isNextLinkAvailable || shouldRetry) {
         await delayForRateLimit(queryParams.max_pages);
@@ -238,19 +360,38 @@ const getFlights = async (urlPath, queryParams = {}, flightsKeys = []) => {
         if (response?.data) {
             shouldRetry = false;
             const { data: responseData } = response;
-            _.forEach(flightsKeys, (flightsKey) => {
-                console.log(`[${new Date().toISOString()}] Got ${responseData[flightsKey]?.length || 0} ${flightsKey} flights from path ${_urlPath}!`);
+            storeLastAttempt(responseData.num_pages);
+
+            _.forEach(flightsKeys, (flightsKey, flightIdx) => {
+                console.log(`[${new Date().toISOString()}] Got ${responseData[flightsKey]?.length || 0} ${_.lowerCase(flightsKey)} flights from path ${_urlPath}!`);
                 _.forEach(responseData[flightsKey], (flight) => {
                     try {
                         const standardizedFlight = standardizeFlightObject(flight);
-                        flights.push(standardizedFlight);
+                        
+                        switch (EXPECTED_RESULTS_SHAPE) {
+                            case RESULTS_SHAPES.csv: {
+                                const flightCsv = generateCsv(
+                                    standardizedFlight,
+                                    opts?.shouldReturnHeader && iterationIdx === 0 && flightIdx === 0,
+                                );
+
+                                flights += `${flightCsv}\n`;
+                                break;
+                            }
+                            default: {
+                                flights.push(standardizedFlight);
+                            }
+                        }
                     } catch (err) {
                         console.log(`[${new Date().toISOString()}] Error when standardizing object ${JSON.stringify(flight)}. Error: ${err.stack || JSON.stringify(err)}`);
                     }
                 });
+
+                if (SHOULD_PRINT_RESULT_ON_LOG) {
+                    printFlightsOnLog(flights);
+                }
             });
-            
-            storeLastAttempt(responseData.num_pages);
+            iterationIdx++;
 
             if (responseData.links?.next) {
                 _urlPath = responseData.links.next;
@@ -270,113 +411,137 @@ const getFlights = async (urlPath, queryParams = {}, flightsKeys = []) => {
  * Get flights that are departed from an airport
  * @author Jeremia Siahaan
  * @param {string} originAirportCode 
- * @param {Object} queryParams 
- * @returns {Promise<Array<Object>>}
+ * @param {Object} [queryParams]
+ * @param {Object} [opts]
+ * @returns {Promise<Object[]|string>}
  */
-const getFlightsDepartedFromAirport = (originAirportCode, queryParams) => getFlights(
+const getFlightsDepartedFromAirport = (originAirportCode, queryParams = {}, opts = {}) => getFlights(
     `/airports/${originAirportCode}/flights/departures`,
     queryParams,
     ['departures'],
+    opts,
 );
 
 /**
  * Get flights that are departed from an airport
  * @author Jeremia Siahaan
  * @param {string} originAirportCode 
- * @param {Object} queryParams 
- * @returns {Promise<Array<Object>>}
+ * @param {Object} [queryParams]
+ * @param {Object} [opts]
+ * @returns {Promise<Object[]|string>}
  */
-const getFutureFlightsDepartingFromAirport = (originAirportCode, queryParams) => getFlights(
+const getFutureFlightsDepartingFromAirport = (originAirportCode, queryParams = {}, opts = {}) => getFlights(
     `/airports/${originAirportCode}/flights/scheduled_departures`,
     queryParams,
     ['scheduled_departures'],
+    opts,
 );
 
 /**
  * Get historical flights that were planned to depart from an airport
  * @author Jeremia Siahaan
  * @param {string} originAirportCode 
- * @param {Object} queryParams 
- * @returns {Promise<Array<Object>>}
+ * @param {Object} [queryParams]
+ * @param {Object} [opts]
+ * @returns {Promise<Object[]|string>}
  */
-const getHistoricalFlightsDepartedFromAirport = (originAirportCode, queryParams) => getFlights(
+const getHistoricalFlightsDepartedFromAirport = (originAirportCode, queryParams = {}, opts = {}) => getFlights(
     `/history/airports/${originAirportCode}/flights/departures`,
     queryParams,
     ['departures'],
+    opts,
 );
 
 /**
  * Get all flights of an operator
  * @author Jeremia Siahaan
  * @param {string} airlineCode 
- * @param {Object} queryParams 
- * @returns {Promise<Array<Object>>}
+ * @param {Object} [queryParams]
+ * @param {Object} [opts]
+ * @returns {Promise<Object[]|string>}
  */
-const getOperatorFlights = (airlineCode, queryParams) => getFlights(
+const getOperatorFlights = (airlineCode, queryParams = {}, opts = {}) => getFlights(
     `/operators/${airlineCode}/flights`,
     queryParams,
     ['scheduled', 'arrivals', 'enroute'],
+    opts,
 );
 
 /**
  * Get all arrived flights of an operator
  * @author Jeremia Siahaan
  * @param {string} airlineCode 
- * @param {Object} queryParams 
- * @returns {Promise<Array<Object>>}
+ * @param {Object} [queryParams]
+ * @param {Object} [opts]
+ * @returns {Promise<Object[]|string>}
  */
-const getOperatorArrivedFlights = (airlineCode, queryParams) => getFlights(
+const getOperatorArrivedFlights = (airlineCode, queryParams = {}, opts = {}) => getFlights(
     `/operators/${airlineCode}/flights/arrivals`,
     queryParams,
     ['arrivals'],
+    opts,
 );
 
 /**
  * Get all en route flights of an operator
  * @author Jeremia Siahaan
  * @param {string} airlineCode 
- * @param {Object} queryParams 
- * @returns {Promise<Array<Object>>}
+ * @param {Object} [queryParams]
+ * @param {Object} [opts]
+ * @returns {Promise<Object[]|string>}
  */
-const getOperatorEnRouteFlights = (airlineCode, queryParams) => getFlights(
+const getOperatorEnRouteFlights = (airlineCode, queryParams = {}, opts = {}) => getFlights(
     `/operators/${airlineCode}/flights/enroute`,
     queryParams,
     ['enroute'],
+    opts,
 );
 
 /**
  * Get all scheduled flights of an operator
  * @author Jeremia Siahaan
  * @param {string} airlineCode 
- * @param {Object} queryParams 
- * @returns {Promise<Array<Object>>}
+ * @param {Object} [queryParams]
+ * @param {Object} [opts]
+ * @returns {Promise<Object[]|string>}
  */
-const getOperatorScheduledFlights = (airlineCode, queryParams) => getFlights(
+const getOperatorScheduledFlights = (airlineCode, queryParams = {}, opts = {}) => getFlights(
     `/operators/${airlineCode}/flights/scheduled`,
     queryParams,
     ['scheduled'],
+    opts,
 );
 
 /**
  * Get all historical flights of an operator
  * @author Jeremia Siahaan
  * @param {string} airlineCode 
- * @param {Object} queryParams 
- * @returns {Promise<Array<Object>>}
+ * @param {Object} [queryParams]
+ * @param {Object} [opts]
+ * @returns {Promise<Object[]|string>}
  */
-const getHistoricalOperatorFlights = (airlineCode, queryParams) => getFlights(
+const getHistoricalOperatorFlights = (airlineCode, queryParams = {}, opts = {}) => getFlights(
     `/history/operators/${airlineCode}/flights`,
     queryParams,
     ['flights'],
+    opts,
 );
 
-module.exports = {
-    getFlightsDepartedFromAirport,
-    getFutureFlightsDepartingFromAirport,
-    getHistoricalFlightsDepartedFromAirport,
-    getHistoricalOperatorFlights,
-    getOperatorArrivedFlights,
-    getOperatorEnRouteFlights,
-    getOperatorFlights,
-    getOperatorScheduledFlights,
+module.exports = (
+    expectedResultsShape = RESULTS_SHAPES.objectArray,
+    shouldPrintResultOnLog = false,
+) => {
+    EXPECTED_RESULTS_SHAPE = expectedResultsShape;
+    SHOULD_PRINT_RESULT_ON_LOG = shouldPrintResultOnLog;
+
+    return ({
+        getFlightsDepartedFromAirport,
+        getFutureFlightsDepartingFromAirport,
+        getHistoricalFlightsDepartedFromAirport,
+        getHistoricalOperatorFlights,
+        getOperatorArrivedFlights,
+        getOperatorEnRouteFlights,
+        getOperatorFlights,
+        getOperatorScheduledFlights,
+    });
 };
