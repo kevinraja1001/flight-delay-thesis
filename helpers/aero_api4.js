@@ -170,37 +170,58 @@ const generateCsv = (flight, shouldReturnHeader = false) => {
 };
 
 /**
- * Print flights on log
+ * Create a collection of flights results
  * @author Jeremia Siahaan
- * @param {Object[]|string} flights 
- * @returns {void}
+ * @returns {Object}
  */
-const printFlightsOnLog = (flights) => {
+const createFlightsResults = () => {
+    let results;
+
     switch (EXPECTED_RESULTS_SHAPE) {
-        case RESULTS_SHAPES.objectArray: {
-            console.log(JSON.stringify(flights));
+        case RESULTS_SHAPES.csv: {
+            results = '';
             break;
         }
         default: {
-            console.log(flights);
+            results = [];
         }
     }
-};
 
-/**
- * Initiate flights results
- * @author Jeremia Siahaan
- * @returns {string|Object[]}
- */
-const initiateFlightsResults = () => {
-    switch (EXPECTED_RESULTS_SHAPE) {
-        case RESULTS_SHAPES.csv: {
-            return '';
-        }
-        default: {
-            return [];
+    const push = (newResults) => {
+        switch (EXPECTED_RESULTS_SHAPE) {
+            case RESULTS_SHAPES.csv: {
+                results += `${newResults}\n`;
+                break;
+            }
+            default: {
+                const _newResults = _.isArray(newResults)
+                    ? newResults
+                    : [newResults];
+
+                results.push(..._newResults);
+            }
         }
     }
+
+    const value = () => results;
+
+    const log = () => {
+        switch (EXPECTED_RESULTS_SHAPE) {
+            case RESULTS_SHAPES.objectArray: {
+                console.log(JSON.stringify(flights));
+                break;
+            }
+            default: {
+                console.log(flights);
+            }
+        }
+    };
+
+    return {
+        log,
+        push,
+        value,
+    };
 };
 
 /**
@@ -322,7 +343,7 @@ const getFlights = async (
     const queryString = new URLSearchParams(queryParams).toString();
     let _urlPath = `${urlPath}?${queryString}`;
 
-    const flights = initiateFlightsResults();
+    const flights = createFlightsResults();
 
     let isNextLinkAvailable = true;
     let shouldRetry = false;
@@ -369,7 +390,7 @@ const getFlights = async (
             const { data: responseData } = response;
             storeLastAttempt(responseData.num_pages);
 
-            const thisIterationFlights = initiateFlightsResults();
+            const thisIterationFlights = createFlightsResults();
 
             _.forEach(flightsKeys, (flightsKey, keyIdx) => {
                 log(`Got ${responseData[flightsKey]?.length || 0} ${_.lowerCase(flightsKey)} flights from path ${_urlPath}!`);
@@ -377,23 +398,17 @@ const getFlights = async (
                     try {
                         let standardizedFlight = standardizeFlightObject(flight);
 
-                        switch (EXPECTED_RESULTS_SHAPE) {
-                            case RESULTS_SHAPES.csv: {
-                                standardizedFlight = generateCsv(
-                                    standardizedFlight,
-                                    opts?.shouldReturnHeader
-                                        && iterationIdx === 0
-                                        && keyIdx === 0
-                                        && flightIdx === 0,
-                                );
-
-                                thisIterationFlights += `${standardizedFlight}\n`;
-                                break;
-                            }
-                            default: {
-                                thisIterationFlights.push(standardizedFlight);
-                            }
+                        if (EXPECTED_RESULTS_SHAPE === RESULTS_SHAPES.csv) {
+                            standardizedFlight = generateCsv(
+                                standardizedFlight,
+                                opts?.shouldReturnHeader
+                                    && iterationIdx === 0
+                                    && keyIdx === 0
+                                    && flightIdx === 0,
+                            );
                         }
+
+                        thisIterationFlights.push(standardizedFlight);
                     } catch (err) {
                         log(`Error when standardizing object ${JSON.stringify(flight)}. Error: ${err.stack || JSON.stringify(err)}`);
                     }
@@ -401,18 +416,10 @@ const getFlights = async (
             });
 
             if (SHOULD_PRINT_RESULT_ON_LOG) {
-                printFlightsOnLog(thisIterationFlights);
+                thisIterationFlights.log();
             }
 
-            switch (EXPECTED_RESULTS_SHAPE) {
-                case RESULTS_SHAPES.csv: {
-                    flights += `${thisIterationFlights}\n`;
-                    break;
-                }
-                default: {
-                    flights.push(...thisIterationFlights);
-                }
-            }
+            flights.push(thisIterationFlights);
             iterationIdx++;
 
             if (responseData.links?.next) {
@@ -426,7 +433,7 @@ const getFlights = async (
         }
     }
 
-    return flights;
+    return flights.value();
 };
 
 /**
