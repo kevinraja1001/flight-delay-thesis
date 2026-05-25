@@ -9,6 +9,7 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 const createAeroApi4Helpers = require('./helpers/aero_api4');
+const { log } = require('./utils');
 const { RESULTS_SHAPES } = require('./constants');
 
 const aeroApi4Helpers = createAeroApi4Helpers(RESULTS_SHAPES.csv, true);
@@ -28,7 +29,7 @@ const END_DATE_TIME = dayjs
 
 Promise
     .try(async () => {
-        console.log(`[${new Date().toISOString()}] Reading airports dataset...`);
+        log('Reading airports dataset...');
         const airportDataParser = fs
             .createReadStream('./datasets/top-20-busiest-australian-airports.csv')
             .pipe(parse({
@@ -43,7 +44,7 @@ Promise
             airports.push(record);
         }
 
-        console.log(`[${new Date().toISOString()}] Reading airlines dataset...`);
+        log('Reading airlines dataset...');
         const airlineDataParser = fs
             .createReadStream('./datasets/top-australian-airlines.csv')
             .pipe(parse({
@@ -69,7 +70,7 @@ Promise
                 return null;
             }
 
-            console.log(`[${new Date().toISOString()}] Fetching data for airport ${airport.ICAO} (IATA: ${airport.IATA}, city: ${airport.City})...`);
+            log(`Fetching data for airport ${airport.ICAO} (IATA: ${airport.IATA}, city: ${airport.City})...`);
             const _queryParams = {
                 ...queryParams,
                 type: 'Airline',
@@ -88,7 +89,7 @@ Promise
         }
 
         for await (const airline of airlines) {
-            console.log(`[${new Date().toISOString()}] Fetching data for airline ${airline.ICAO} (IATA: ${airline.IATA}, name: ${airline.Name})...`);
+            log(`Fetching data for airline ${airline.ICAO} (IATA: ${airline.IATA}, name: ${airline.Name})...`);
 
             const arrivedFlights = await aeroApi4Helpers.getOperatorArrivedFlights(airline.ICAO, queryParams);
             const enRouteFlights = await aeroApi4Helpers.getOperatorEnRouteFlights(airline.ICAO, queryParams);
@@ -96,11 +97,11 @@ Promise
         }
     })
     .then(() => {
-        console.log(`[${new Date().toISOString()}] Done fetching all flights data!`);
+        log('Done fetching all flights data!');
     })
     .catch((err) => {
-        console.error(`[${new Date().toISOString()}] Error when fetching flight data from AeroAPI4. Error: ${err.stack || err}`);
+        log(`Error when fetching flight data from AeroAPI4. Error: ${err.stack || err}`);
     })
     .finally(() => {
-        console.log(`[${new Date().toISOString()}] End of process!`);
+        log('End of process!');
     });

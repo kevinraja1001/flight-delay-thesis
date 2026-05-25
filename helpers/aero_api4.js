@@ -4,6 +4,7 @@ const dayjs = require('dayjs');
 const timezone = require('dayjs/plugin/timezone');
 const utc = require('dayjs/plugin/utc');
 
+const { log } = require('../utils');
 const { RESULTS_SHAPES } = require('../constants');
 
 dayjs.extend(utc);
@@ -61,9 +62,9 @@ const delayForRateLimit = async (maxPages) => {
 
         if (lastAttemptTimestamp) {
             waitTimeInMs -= (new Date() - lastAttemptTimestamp);
-            console.log(`[${new Date().toISOString()}] Last attempt happened at ${lastAttemptTimestamp.toISOString()}. Waiting for ${waitTimeInMs} ms...`);
+            log(`Last attempt happened at ${lastAttemptTimestamp.toISOString()}. Waiting for ${waitTimeInMs} ms...`);
         } else {
-            console.log(`[${new Date().toISOString()}] Waiting for ${waitTimeInMs} ms...`);
+            log(`Waiting for ${waitTimeInMs} ms...`);
         }
 
         await delay(waitTimeInMs);
@@ -328,7 +329,7 @@ const standardizeFlightObject = flight => flight => {
  */
 const sendRequest = (urlPath) => {
     const apiUrl = `${AERO_API_4_URL}${urlPath}`;
-    console.log(`[${new Date().toISOString()}] Sending HTTP GET request to ${apiUrl}...`);
+    log(`Sending HTTP GET request to ${apiUrl}...`);
 
     return axios({
         headers: { 'x-apikey': AERO_API_4_API_KEY },
@@ -392,7 +393,7 @@ const getFlights = async (
             }
 
             errorMessage += ` Config: ${JSON.stringify(err.config)}.`;
-            console.log(`[${new Date().toISOString()}] ${errorMessage}`);
+            log(errorMessage);
             isNextLinkAvailable = false;
 
             if (err.response?.status === 429) {
@@ -411,7 +412,7 @@ const getFlights = async (
             const thisIterationFlights = initiateFlightsResults();
 
             _.forEach(flightsKeys, (flightsKey, keyIdx) => {
-                console.log(`[${new Date().toISOString()}] Got ${responseData[flightsKey]?.length || 0} ${_.lowerCase(flightsKey)} flights from path ${_urlPath}!`);
+                log(`Got ${responseData[flightsKey]?.length || 0} ${_.lowerCase(flightsKey)} flights from path ${_urlPath}!`);
                 _.forEach(responseData[flightsKey], (flight, flightIdx) => {
                     try {
                         let standardizedFlight = standardizeFlightObject(flight);
@@ -428,7 +429,7 @@ const getFlights = async (
                         
                         pushFlightResultToFlightsResults(standardizedFlight, thisIterationFlights);
                     } catch (err) {
-                        console.log(`[${new Date().toISOString()}] Error when standardizing object ${JSON.stringify(flight)}. Error: ${err.stack || JSON.stringify(err)}`);
+                        log(`Error when standardizing object ${JSON.stringify(flight)}. Error: ${err.stack || JSON.stringify(err)}`);
                     }
                 });
             });
