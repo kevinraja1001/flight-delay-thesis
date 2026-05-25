@@ -249,7 +249,7 @@ const pushFlightsResultsToMainFlightsResults = (flights, mainFlights) => {
  * @param {Object} flight 
  * @returns {Object}
  */
-const standardizeFlightObject = flight => flight => {
+const standardizeFlightObject = flight => {
     const originTimezone = flight.origin?.timezone;
     const destinationTimezone = flight.destination?.timezone;
 
