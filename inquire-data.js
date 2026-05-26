@@ -14,14 +14,19 @@ const { RESULTS_SHAPES } = require('./constants');
 
 const aeroApi4Helpers = createAeroApi4Helpers(RESULTS_SHAPES.csv, true);
 
+const DATA_TYPE = {
+    airline: 'AIRLINE',
+    airport: 'AIRPORT',
+};
+
 const AIRPORT_COUNT = 10;
 const START_DATE_TIME = dayjs
-    .tz('2026-05-18 00:00:00', 'Australia/Perth')
+    .tz('2026-05-25 00:00:00', 'Australia/Perth')
     .startOf('day')
     .utc()
     .format();
 const END_DATE_TIME = dayjs
-    .tz('2026-05-24 23:59:59', 'Australia/Perth')
+    .tz('2026-05-25 23:59:59', 'Australia/Perth')
     .add(1, 'day')
     .startOf('day')
     .utc()
@@ -29,6 +34,7 @@ const END_DATE_TIME = dayjs
 
 Promise
     .try(async () => {
+        const allRawData = [];
         log('Reading airports dataset...');
         const airportDataParser = fs
             .createReadStream('./datasets/top-20-busiest-australian-airports.csv')
@@ -38,10 +44,12 @@ Promise
                 trim: true,
                 relax_column_count: true,
             }));
-        
-        const airports = [];
+
         for await (const record of airportDataParser) {
-            airports.push(record);
+            allRawData.push({
+                ...record,
+                type: DATA_TYPE.airport,
+            });
         }
 
         log('Reading airlines dataset...');
@@ -54,9 +62,11 @@ Promise
                 relax_column_count: true,
             }));
 
-        const airlines = [];
         for await (const record of airlineDataParser) {
-            airlines.push(record);
+            allRawData.push({
+                ...record,
+                type: DATA_TYPE.airline,
+            });
         };
 
         const queryParams = {
@@ -65,35 +75,41 @@ Promise
             max_pages: 5,
         };
 
-        for await (const [airportIdx, airport] of airports.entries()) {
-            if (Number(airport.Rank) > AIRPORT_COUNT) {
-                return null;
+        const _allRawData = _.uniqBy(allRawData, 'ICAO');
+        for await (const [idx, rawData] of _allRawData.entries()) {
+            if (rawData.type === DATA_TYPE.airport) {
+                if (Number(rawData.Rank) > AIRPORT_COUNT) {
+                    return null;
+                }
+
+                log(`Fetching data for airport ${rawData.ICAO} (IATA: ${rawData.IATA}, city: ${rawData.City})...`);
+                const _queryParams = {
+                    ...queryParams,
+                    type: 'Airline',
+                };
+
+                const departureFlights = await aeroApi4Helpers.getFlightsDepartedFromAirport(
+                    rawData.ICAO,
+                    _queryParams,
+                    { shouldReturnHeader: idx === 0 },
+                );
+
+                const scheduledDepartureFlights = await aeroApi4Helpers.getFutureFlightsDepartingFromAirport(
+                    rawData.ICAO,
+                    _queryParams,
+                );
+            } else if (rawData.type === DATA_TYPE.airline) {
+                log(`Fetching data for airline ${rawData.ICAO} (IATA: ${rawData.IATA}, name: ${rawData.Name})...`);
+
+                const arrivedFlights = await aeroApi4Helpers.getOperatorArrivedFlights(
+                    rawData.ICAO,
+                    queryParams,
+                    { shouldReturnHeader: idx === 0 },
+                );
+                const enRouteFlights = await aeroApi4Helpers.getOperatorEnRouteFlights(rawData.ICAO, queryParams);
+                const scheduledFlights = await aeroApi4Helpers.getOperatorScheduledFlights(rawData.ICAO, queryParams);
             }
-
-            log(`Fetching data for airport ${airport.ICAO} (IATA: ${airport.IATA}, city: ${airport.City})...`);
-            const _queryParams = {
-                ...queryParams,
-                type: 'Airline',
-            };
-
-            const departureFlights = await aeroApi4Helpers.getFlightsDepartedFromAirport(
-                airport.ICAO,
-                _queryParams,
-                { shouldReturnHeader: airportIdx === 0 },
-            );
-
-            const scheduledDepartureFlights = await aeroApi4Helpers.getFutureFlightsDepartingFromAirport(
-                airport.ICAO,
-                _queryParams,
-            );
-        }
-
-        for await (const airline of airlines) {
-            log(`Fetching data for airline ${airline.ICAO} (IATA: ${airline.IATA}, name: ${airline.Name})...`);
-
-            const arrivedFlights = await aeroApi4Helpers.getOperatorArrivedFlights(airline.ICAO, queryParams);
-            const enRouteFlights = await aeroApi4Helpers.getOperatorEnRouteFlights(airline.ICAO, queryParams);
-            const scheduledFlights = await aeroApi4Helpers.getOperatorScheduledFlights(airline.ICAO, queryParams);
+            
         }
     })
     .then(() => {
