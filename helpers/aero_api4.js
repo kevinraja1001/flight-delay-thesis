@@ -372,6 +372,7 @@ const getFlights = async (
     let isNextLinkAvailable = true;
     let shouldRetry = false;
     let iterationIdx = 0;
+    let shouldReturnHeader = opts?.shouldReturnHeader || false;
 
     while (isNextLinkAvailable || shouldRetry) {
         await ATTEMPTS_HISTORY.delayForRateLimit(queryParams.max_pages);
@@ -420,15 +421,10 @@ const getFlights = async (
                 log(`Got ${responseData[flightsKey]?.length || 0} ${_.lowerCase(flightsKey)} flights from path ${_urlPath}!`);
                 _.forEach(responseData[flightsKey], (flight, flightIdx) => {
                     try {
-                        const flightRes = new FlightResult(
-                            flight,
-                            opts?.shouldReturnHeader
-                                && iterationIdx === 0
-                                && keyIdx === 0
-                                && flightIdx === 0,
-                        );
+                        const flightRes = new FlightResult(flight, shouldReturnHeader);
 
                         thisIterationFlights.push(flightRes.value());
+                        shouldReturnHeader = false;
                     } catch (err) {
                         log(`Error when standardizing object ${JSON.stringify(flight)}. Error: ${err.stack || JSON.stringify(err)}`);
                     }

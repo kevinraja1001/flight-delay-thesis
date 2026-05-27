@@ -21,12 +21,12 @@ const DATA_TYPE = {
 
 const AIRPORT_COUNT = 10;
 const START_DATE_TIME = dayjs
-    .tz('2026-05-25 00:00:00', 'Australia/Perth')
+    .tz('2026-05-26 00:00:00', 'Australia/Perth')
     .startOf('day')
     .utc()
     .format();
 const END_DATE_TIME = dayjs
-    .tz('2026-05-25 23:59:59', 'Australia/Perth')
+    .tz('2026-05-26 23:59:59', 'Australia/Perth')
     .add(1, 'day')
     .startOf('day')
     .utc()
@@ -76,6 +76,8 @@ Promise
         };
 
         const _allRawData = _.uniqBy(allRawData, 'ICAO');
+        let shouldReturnHeader = true;
+
         for await (const [idx, rawData] of _allRawData.entries()) {
             if (rawData.type === DATA_TYPE.airport) {
                 if (Number(rawData.Rank) > AIRPORT_COUNT) {
@@ -91,7 +93,7 @@ Promise
                 const departureFlights = await aeroApi4Helpers.getFlightsDepartedFromAirport(
                     rawData.ICAO,
                     _queryParams,
-                    { shouldReturnHeader: idx === 0 },
+                    { shouldReturnHeader },
                 );
 
                 const scheduledDepartureFlights = await aeroApi4Helpers.getFutureFlightsDepartingFromAirport(
@@ -104,12 +106,12 @@ Promise
                 const arrivedFlights = await aeroApi4Helpers.getOperatorArrivedFlights(
                     rawData.ICAO,
                     queryParams,
-                    { shouldReturnHeader: idx === 0 },
+                    { shouldReturnHeader },
                 );
                 const enRouteFlights = await aeroApi4Helpers.getOperatorEnRouteFlights(rawData.ICAO, queryParams);
                 const scheduledFlights = await aeroApi4Helpers.getOperatorScheduledFlights(rawData.ICAO, queryParams);
             }
-            
+            shouldReturnHeader = false;
         }
     })
     .then(() => {
