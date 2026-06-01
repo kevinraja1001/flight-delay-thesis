@@ -180,12 +180,12 @@ function FlightResult(flight, shouldReturnHeader = false) {
                 .tz(originTimezone)
                 .format('YYYY-MM-DDTHH:mm:ssZ')
             : flight.scheduled_out,
-        estimated_out_local: flight.estimated_out
+        estimated_out_local: flight.estimated_out && originTimezone
             ? dayjs(flight.estimated_out)
                 .tz(originTimezone)
                 .format('YYYY-MM-DDTHH:mm:ssZ')
             : flight.estimated_out,
-        actual_out_local: flight.actual_out
+        actual_out_local: flight.actual_out && originTimezone
             ? dayjs(flight.actual_out)
                 .tz(originTimezone)
                 .format('YYYY-MM-DDTHH:mm:ssZ')
@@ -196,12 +196,12 @@ function FlightResult(flight, shouldReturnHeader = false) {
                 .tz(originTimezone)
                 .format('YYYY-MM-DDTHH:mm:ssZ')
             : flight.scheduled_off,
-        estimated_off_local: flight.estimated_off
+        estimated_off_local: flight.estimated_off && originTimezone
             ? dayjs(flight.estimated_off)
                 .tz(originTimezone)
                 .format('YYYY-MM-DDTHH:mm:ssZ')
             : flight.estimated_off,
-        actual_off_local: flight.actual_off
+        actual_off_local: flight.actual_off && originTimezone
             ? dayjs(flight.actual_off)
                 .tz(originTimezone)
                 .format('YYYY-MM-DDTHH:mm:ssZ')
@@ -212,12 +212,12 @@ function FlightResult(flight, shouldReturnHeader = false) {
                 .tz(destinationTimezone)
                 .format('YYYY-MM-DDTHH:mm:ssZ')
             : flight.scheduled_on,
-        estimated_on_local: flight.estimated_on
+        estimated_on_local: flight.estimated_on && destinationTimezone
             ? dayjs(flight.estimated_on)
                 .tz(destinationTimezone)
                 .format('YYYY-MM-DDTHH:mm:ssZ')
             : flight.estimated_on,
-        actual_on_local: flight.actual_on
+        actual_on_local: flight.actual_on && destinationTimezone
             ? dayjs(flight.actual_on)
                 .tz(destinationTimezone)
                 .format('YYYY-MM-DDTHH:mm:ssZ')
@@ -228,12 +228,12 @@ function FlightResult(flight, shouldReturnHeader = false) {
                 .tz(destinationTimezone)
                 .format('YYYY-MM-DDTHH:mm:ssZ')
             : flight.scheduled_in,
-        estimated_in_local: flight.estimated_in
+        estimated_in_local: flight.estimated_in && destinationTimezone
             ? dayjs(flight.estimated_in)
                 .tz(destinationTimezone)
                 .format('YYYY-MM-DDTHH:mm:ssZ')
             : flight.estimated_in,
-        actual_in_local: flight.actual_in
+        actual_in_local: flight.actual_in && destinationTimezone
             ? dayjs(flight.actual_in)
                 .tz(destinationTimezone)
                 .format('YYYY-MM-DDTHH:mm:ssZ')
