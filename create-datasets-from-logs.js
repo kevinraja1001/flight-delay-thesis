@@ -1,8 +1,13 @@
 const _ = require('lodash');
 const dayjs = require('dayjs');
 const fs = require('fs');
+const timezone = require('dayjs/plugin/timezone');
+const utc = require('dayjs/plugin/utc');
 
-const separateCsv = (logFilePath, key) => {
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const separateCsv = (logFilePath, groupingIterateeFunc) => {
     const logText = fs.readFileSync(logFilePath, { encoding: 'utf8' });
     const rows = logText.split('\n');
     let headers;
@@ -71,8 +76,8 @@ const separateCsv = (logFilePath, key) => {
         }
     }
 
-    const keyedResults = _.groupBy(collection, key);
-    _.forOwn(keyedResults, (results) => {
+    const keyedResults = _.groupBy(collection, groupingIterateeFunc);
+    _.forOwn(keyedResults, (results, groupKey) => {
         const sortedResults = _.sortBy(results, res => dayjs(res.scheduled_off || res.scheduled_out).valueOf());
         const csvRows = [headers.join(';')];
         _.forEach(results, (res) => {
@@ -85,10 +90,29 @@ const separateCsv = (logFilePath, key) => {
         });
 
         const csvText = csvRows.join('\n');
-        fs.writeFileSync(`./fetched-datasets/${results[0][key]}.csv`, csvText);
+        console.log(`${groupKey}: ${sortedResults.length}`);
+        fs.writeFileSync(`./fetched-datasets/${groupKey}.csv`, csvText);
     });
 };
 
-separateCsv('./20260526_0001.log', 'origin_code_iata');
-separateCsv('./20260526_0002.log', 'operator_iata');
-separateCsv('./20260526_0003.log', 'operator_iata');
+separateCsv('./20260526_0001.log', (res) => {
+    const date = dayjs(res.scheduled_off || res.scheduled_out)
+        .tz(res.origin_timezone)
+        .format('YYYYMMDD');
+
+    return `${res.origin_code_icao}_${date}`;
+});
+separateCsv('./20260526_0002.log', (res) => {
+    const date = dayjs(res.scheduled_off || res.scheduled_out)
+        .tz(res.origin_timezone)
+        .format('YYYYMMDD');
+
+    return `${res.operator_icao}_${date}`;
+});
+separateCsv('./20260526_0003.log', (res) => {
+    const date = dayjs(res.scheduled_off || res.scheduled_out)
+        .tz(res.origin_timezone)
+        .format('YYYYMMDD');
+
+    return `${res.operator_icao}_${date}`;
+});
