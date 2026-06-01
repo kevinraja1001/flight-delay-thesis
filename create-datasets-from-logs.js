@@ -7,6 +7,8 @@ const utc = require('dayjs/plugin/utc');
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
+const CREATE_CSV_FOR_EXCEL_READABLE = true;
+
 const separateCsv = (logFilePath, groupingIterateeFunc) => {
     const logText = fs.readFileSync(logFilePath, { encoding: 'utf8' });
     const rows = logText.split('\n');
@@ -89,9 +91,12 @@ const separateCsv = (logFilePath, groupingIterateeFunc) => {
             csvRows.push(rowSeed.join(';'));
         });
 
-        const csvText = csvRows.join('\n');
+        let csvText = CREATE_CSV_FOR_EXCEL_READABLE
+            ? 'sep=;\n'
+            : '';
+        csvText += csvRows.join('\n');
         console.log(`${groupKey}: ${sortedResults.length}`);
-        fs.writeFileSync(`./fetched-datasets/${groupKey}.csv`, csvText);
+        fs.writeFileSync(`./fetched-datasets${CREATE_CSV_FOR_EXCEL_READABLE ? '-excel' : ''}/${groupKey}.csv`, csvText);
     });
 };
 
