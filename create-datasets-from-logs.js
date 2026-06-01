@@ -9,18 +9,27 @@ dayjs.extend(timezone);
 
 const CREATE_CSV_FOR_EXCEL_READABLE = true;
 
-const separateCsv = (logFilePath, groupingIterateeFunc) => {
+const separateCsv = (logFilePath) => {
     const logText = fs.readFileSync(logFilePath, { encoding: 'utf8' });
     const rows = logText.split('\n');
     let headers;
-    const collection = [];
+    const airportCollection = [];
+    const airlineCollection = [];
+    let collection;
 
     let rowIdx = 0;
 
     while (rows.length > 0 && rowIdx < rows.length) {
         const rowStr = rows[rowIdx];
 
-        if (rowStr.indexOf('nohup') >= 0 || rowStr.indexOf('   at ') >= 0 || _.isEmpty(rowStr)) {
+        if (rowStr.indexOf('Fetching data for ') >= 0) {
+            if (rowStr.indexOf('airport') >= 0) {
+                collection = airportCollection;
+            } else if (rowStr.indexOf('airline') >= 0) {
+                collection = airlineCollection;
+            }
+            rows.shift();
+        } else if (rowStr.indexOf('nohup') >= 0 || rowStr.indexOf('   at ') >= 0 || _.isEmpty(rowStr)) {
             rows.shift();
         } else if (rowStr.indexOf('Error when standardizing object') >= 0) {
             const responseJson = rowStr.match(/\{.*\}/s)[0];
@@ -78,7 +87,22 @@ const separateCsv = (logFilePath, groupingIterateeFunc) => {
         }
     }
 
-    const keyedResults = _.groupBy(collection, groupingIterateeFunc);
+    const keyedResults = {
+        ..._.groupBy(airportCollection, (res) => {
+            const date = dayjs(res.scheduled_off || res.scheduled_out)
+                .tz(res.origin_timezone)
+                .format('YYYYMMDD');
+
+            return `${res.origin_code_icao}_${date}`;
+        }),
+        ..._.groupBy(airlineCollection, (res) => {
+            const date = dayjs(res.scheduled_off || res.scheduled_out)
+                .tz(res.origin_timezone)
+                .format('YYYYMMDD');
+
+            return `${res.operator_icao}_${date}`;
+        }),
+    };
     _.forOwn(keyedResults, (results, groupKey) => {
         const sortedResults = _.sortBy(results, res => dayjs(res.scheduled_off || res.scheduled_out).valueOf());
         const csvRows = [headers.join(';')];
@@ -100,24 +124,5 @@ const separateCsv = (logFilePath, groupingIterateeFunc) => {
     });
 };
 
-separateCsv('./20260526_0001.log', (res) => {
-    const date = dayjs(res.scheduled_off || res.scheduled_out)
-        .tz(res.origin_timezone)
-        .format('YYYYMMDD');
-
-    return `${res.origin_code_icao}_${date}`;
-});
-separateCsv('./20260526_0002.log', (res) => {
-    const date = dayjs(res.scheduled_off || res.scheduled_out)
-        .tz(res.origin_timezone)
-        .format('YYYYMMDD');
-
-    return `${res.operator_icao}_${date}`;
-});
-separateCsv('./20260526_0003.log', (res) => {
-    const date = dayjs(res.scheduled_off || res.scheduled_out)
-        .tz(res.origin_timezone)
-        .format('YYYYMMDD');
-
-    return `${res.operator_icao}_${date}`;
-});
+separateCsv('./20260526_0001.log');
+separateCsv('./20260526_0002.log');
