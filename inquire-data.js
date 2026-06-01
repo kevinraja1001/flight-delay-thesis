@@ -81,7 +81,7 @@ Promise
         for await (const [idx, rawData] of _allRawData.entries()) {
             if (rawData.type === DATA_TYPE.airport) {
                 if (Number(rawData.Rank) > AIRPORT_COUNT) {
-                    return null;
+                    continue;
                 }
 
                 log(`Fetching data for airport ${rawData.ICAO} (IATA: ${rawData.IATA}, city: ${rawData.City})...`);
