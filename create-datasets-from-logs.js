@@ -124,5 +124,5 @@ const separateCsv = (logFilePath) => {
     });
 };
 
-separateCsv('./20260526_0001.log');
-separateCsv('./20260526_0002.log');
+separateCsv('./20260608_0001.log');
+//separateCsv('./20260526_0002.log');
