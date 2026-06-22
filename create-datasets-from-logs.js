@@ -7,7 +7,7 @@ const utc = require('dayjs/plugin/utc');
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-const CREATE_CSV_FOR_EXCEL_READABLE = true;
+const CREATE_CSV_FOR_EXCEL_READABLE = false;
 
 const separateCsv = (logFilePath) => {
     const logText = fs.readFileSync(logFilePath, { encoding: 'utf8' });
@@ -125,4 +125,5 @@ const separateCsv = (logFilePath) => {
 };
 
 separateCsv('./20260608_0001.log');
-//separateCsv('./20260526_0002.log');
+separateCsv('./20260615_0001.log');
+separateCsv('./20260622_0001.log');
