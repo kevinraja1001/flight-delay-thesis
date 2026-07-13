@@ -21,12 +21,12 @@ const DATA_TYPE = {
 
 const AIRPORT_COUNT = 10;
 const START_DATE_TIME = dayjs
-    .tz('2026-06-29 00:00:00', 'Australia/Perth')
+    .tz('2026-07-06 00:00:00', 'Australia/Perth')
     .startOf('day')
     .utc()
     .format();
 const END_DATE_TIME = dayjs
-    .tz('2026-07-05 23:59:59', 'Australia/Perth')
+    .tz('2026-07-12 23:59:59', 'Australia/Perth')
     .add(1, 'day')
     .startOf('day')
     .utc()
