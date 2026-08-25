@@ -19,18 +19,20 @@ const DATA_TYPE = {
     airport: 'AIRPORT',
 };
 
-const AIRPORT_COUNT = 5;
+const AIRPORT_COUNT = 10;
 const START_DATE_TIME = dayjs
-    .tz('2026-08-17 00:00:00', 'Australia/Perth')
+    .tz('2026-05-01 00:00:00', 'Australia/Perth')
     .startOf('day')
     .utc()
     .format();
 const END_DATE_TIME = dayjs
-    .tz('2026-08-23 23:59:59', 'Australia/Perth')
+    .tz('2026-05-31 23:59:59', 'Australia/Perth')
     .add(1, 'day')
     .startOf('day')
     .utc()
     .format();
+// const MAX_PAGES_PER_REQUEST = 10;
+const MAX_PAGES_PER_REQUEST = 5;
 
 Promise
     .try(async () => {
@@ -68,12 +70,51 @@ Promise
                 type: DATA_TYPE.airline,
             });
         };
+        
+        // Create date ranges
+        const dateRanges = [];
 
-        const queryParams = {
-            start: START_DATE_TIME,
-            end: END_DATE_TIME,
-            max_pages: 1,
-        };
+        let startDateTime = START_DATE_TIME;
+        let endDateTime = START_DATE_TIME;
+        
+        while (dayjs(endDateTime).isBefore(END_DATE_TIME)) {
+            if (dayjs().diff(startDateTime, 'hour') < 10 * 24) {
+                endDateTime = dayjs(END_DATE_TIME).isSameOrBefore()
+                    ? END_DATE_TIME
+                    : dayjs().utc().format();
+                dateRanges.push({
+                    start: startDateTime,
+                    end: endDateTime,
+                    queryType: 'CURRENT',
+                });
+                startDateTime = endDateTime;
+                endDateTime = dayjs(startDateTime)
+                    .tz('Australia/Perth')
+                    .add(7, 'day')
+                    .startOf('day')
+                    .utc()
+                    .format();
+            } else {
+                endDateTime = dayjs(startDateTime)
+                    .tz('Australia/Perth')
+                    .add(1, 'day')
+                    .startOf('day')
+                    .utc()
+                    .format();
+                dateRanges.push({
+                    start: startDateTime,
+                    end: endDateTime,
+                    queryType: 'HISTORICAL',
+                });
+                startDateTime = endDateTime;
+                endDateTime = dayjs(startDateTime)
+                    .tz('Australia/Perth')
+                    .add(1, 'day')
+                    .startOf('day')
+                    .utc()
+                    .format();
+            }
+        }
 
         const _allRawData = _.uniqBy(allRawData, 'ICAO');
         let shouldReturnHeader = true;
@@ -85,33 +126,70 @@ Promise
                 }
 
                 log(`Fetching data for airport ${rawData.ICAO} (IATA: ${rawData.IATA}, city: ${rawData.City})...`);
-                const _queryParams = {
-                    ...queryParams,
-                    type: 'Airline',
-                };
+                for await (const dateRange of dateRanges) {
+                    const queryParams = {
+                        start: dateRange.start,
+                        end: dateRange.end,
+                        max_pages: MAX_PAGES_PER_REQUEST,
+                        type: 'Airline',
+                    }
 
-                const departureFlights = await aeroApi4Helpers.getFlightsDepartedFromAirport(
-                    rawData.ICAO,
-                    _queryParams,
-                    { shouldReturnHeader },
-                );
+                    if (dateRange.queryType === 'HISTORICAL') {
+                        const historicalDepartureFlights = await aeroApi4Helpers.getHistoricalFlightsDepartedFromAirport(
+                            rawData.ICAO,
+                            queryParams,
+                            { shouldReturnHeader },
+                        );
+                    } else if (dateRange.queryType === 'CURRENT') {
+                        const departureFlights = await aeroApi4Helpers.getFlightsDepartedFromAirport(
+                            rawData.ICAO,
+                            _queryParams,
+                            { shouldReturnHeader },
+                        );
 
-                const scheduledDepartureFlights = await aeroApi4Helpers.getFutureFlightsDepartingFromAirport(
-                    rawData.ICAO,
-                    _queryParams,
-                );
+                        const scheduledDepartureFlights = await aeroApi4Helpers.getFutureFlightsDepartingFromAirport(
+                            rawData.ICAO,
+                            _queryParams,
+                        );
+                    }
+
+                    shouldReturnHeader = false;
+                }                
             } else if (rawData.type === DATA_TYPE.airline) {
                 log(`Fetching data for airline ${rawData.ICAO} (IATA: ${rawData.IATA}, name: ${rawData.Name})...`);
 
-                const arrivedFlights = await aeroApi4Helpers.getOperatorArrivedFlights(
-                    rawData.ICAO,
-                    queryParams,
-                    { shouldReturnHeader },
-                );
-                const enRouteFlights = await aeroApi4Helpers.getOperatorEnRouteFlights(rawData.ICAO, queryParams);
-                const scheduledFlights = await aeroApi4Helpers.getOperatorScheduledFlights(rawData.ICAO, queryParams);
+                for await (const dateRange of dateRanges) {
+                    const queryParams = {
+                        start: dateRange.start,
+                        end: dateRange.end,
+                        max_pages: MAX_PAGES_PER_REQUEST,
+                        type: 'Airline',
+                    }
+
+                    if (dateRange.queryType === 'HISTORICAL') {
+                        const historicalFlights = await aeroApi4Helpers.getHistoricalOperatorFlights(
+                            rawData.ICAO,
+                            queryParams,
+                            { shouldReturnHeader },
+                        );
+                        const historicalCancelledFlights = await aeroApi4Helpers.getHistoricalCancelledOperatorFlights(
+                            rawData.ICAO,
+                            queryParams,
+                            { shouldReturnHeader },
+                        );
+                    } else if (dateRange.queryType === 'CURRENT') {
+                        const arrivedFlights = await aeroApi4Helpers.getOperatorArrivedFlights(
+                            rawData.ICAO,
+                            queryParams,
+                            { shouldReturnHeader },
+                        );
+                        const enRouteFlights = await aeroApi4Helpers.getOperatorEnRouteFlights(rawData.ICAO, queryParams);
+                        const scheduledFlights = await aeroApi4Helpers.getOperatorScheduledFlights(rawData.ICAO, queryParams);
+                    }
+
+                    shouldReturnHeader = false;
+                }
             }
-            shouldReturnHeader = false;
         }
     })
     .then(() => {

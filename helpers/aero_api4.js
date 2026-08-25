@@ -17,6 +17,7 @@ const {
 
 const PAGES_LIMIT = 10;
 const MILLISECONDS_PER_PAGES_LIMIT = 1 * 1000;
+// const MILLISECONDS_PER_PAGES_LIMIT = 60 * 1000;
 let IDX_BY_COLUMN_KEY = {};
 let EXPECTED_RESULTS_SHAPE = RESULTS_SHAPES.objectArray;
 let SHOULD_PRINT_RESULT_ON_LOG = false;
@@ -572,6 +573,21 @@ const getHistoricalOperatorFlights = (airlineCode, queryParams = {}, opts = {}) 
     opts,
 );
 
+/**
+ * Get all historical cancelled flights of an operator
+ * @author Jeremia Siahaan
+ * @param {string} airlineCode 
+ * @param {Object} [queryParams]
+ * @param {Object} [opts]
+ * @returns {Promise<Object[]|string>}
+ */
+const getHistoricalCancelledOperatorFlights = (airlineCode, queryParams = {}, opts = {}) => getFlights(
+    `/history/operators/${airlineCode}/flights/cancellations`,
+    queryParams,
+    ['cancellations'],
+    opts,
+);
+
 module.exports = (
     expectedResultsShape = RESULTS_SHAPES.objectArray,
     shouldPrintResultOnLog = false,
@@ -583,6 +599,7 @@ module.exports = (
         getFlightsDepartedFromAirport,
         getFutureFlightsDepartingFromAirport,
         getHistoricalFlightsDepartedFromAirport,
+        getHistoricalCancelledOperatorFlights,
         getHistoricalOperatorFlights,
         getOperatorArrivedFlights,
         getOperatorEnRouteFlights,
