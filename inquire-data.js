@@ -31,6 +31,17 @@ const END_DATE_TIME = dayjs
     .startOf('day')
     .utc()
     .format();
+// const START_DATE_TIME = dayjs
+//     .tz('2026-08-17 00:00:00', 'Australia/Perth')
+//     .startOf('day')
+//     .utc()
+//     .format();
+// const END_DATE_TIME = dayjs
+//     .tz('2026-08-23 23:59:59', 'Australia/Perth')
+//     .add(1, 'day')
+//     .startOf('day')
+//     .utc()
+//     .format();
 // const MAX_PAGES_PER_REQUEST = 10;
 const MAX_PAGES_PER_REQUEST = 5;
 
