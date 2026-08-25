@@ -19,14 +19,14 @@ const DATA_TYPE = {
     airport: 'AIRPORT',
 };
 
-const AIRPORT_COUNT = 10;
+const AIRPORT_COUNT = 5;
 const START_DATE_TIME = dayjs
-    .tz('2026-08-03 00:00:00', 'Australia/Perth')
+    .tz('2026-08-17 00:00:00', 'Australia/Perth')
     .startOf('day')
     .utc()
     .format();
 const END_DATE_TIME = dayjs
-    .tz('2026-08-09 23:59:59', 'Australia/Perth')
+    .tz('2026-08-23 23:59:59', 'Australia/Perth')
     .add(1, 'day')
     .startOf('day')
     .utc()
@@ -72,7 +72,7 @@ Promise
         const queryParams = {
             start: START_DATE_TIME,
             end: END_DATE_TIME,
-            max_pages: 5,
+            max_pages: 1,
         };
 
         const _allRawData = _.uniqBy(allRawData, 'ICAO');
