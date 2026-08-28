@@ -88,7 +88,7 @@ Promise
         let startDateTime = START_DATE_TIME;
         let endDateTime = START_DATE_TIME;
         
-        while (dayjs(endDateTime).isBefore(END_DATE_TIME)) {
+        while (dayjs(startDateTime).isBefore(END_DATE_TIME)) {
             if (dayjs().diff(startDateTime, 'hour') < 10 * 24) {
                 endDateTime = dayjs(END_DATE_TIME).isSameOrBefore()
                     ? END_DATE_TIME
