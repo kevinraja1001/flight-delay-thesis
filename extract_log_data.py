@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -104,6 +105,19 @@ def json_rows(value: object, line_number: int) -> list[dict[str, object]]:
     return []
 
 
+CSV_COLUMN_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_.-]*$")
+
+
+def is_csv_header(fields: list[str]) -> bool:
+    """Recognize a real header instead of any log line containing a delimiter."""
+    cleaned = [field.strip().lstrip("\ufeff") for field in fields]
+    return (
+        len(cleaned) >= 2
+        and len(cleaned) == len(set(cleaned))
+        and all(CSV_COLUMN_NAME.fullmatch(field) for field in cleaned)
+    )
+
+
 def extract(
     input_path: Path,
     csv_path: Path,
@@ -116,6 +130,7 @@ def extract(
     seen_json_columns: set[str] = set()
     json_values: list[object] = []
     expected_fields: int | None = None
+    csv_header: list[str] | None = None
     discarded = 0
 
     with input_path.open("r", encoding="utf-8", errors="replace", newline="") as source:
@@ -139,11 +154,19 @@ def extract(
             if delimiter in line:
                 fields = next(csv.reader([line], delimiter=delimiter))
                 if expected_fields is None:
+                    # HTTP headers and cookies frequently contain semicolons.
+                    # They are logs, not CSV, unless a plausible header has
+                    # established the start of a delimited data block.
+                    if not is_csv_header(fields):
+                        discarded += 1
+                        continue
+                    csv_header = fields
                     expected_fields = len(fields)
-                    if expected_fields < 2:
-                        raise ValueError(
-                            f"line {line_number}: invalid CSV header"
-                        )
+                elif fields == csv_header:
+                    # Multiple data blocks may repeat the same header. Keep a
+                    # single header in the extracted CSV.
+                    discarded += 1
+                    continue
                 if len(fields) != expected_fields:
                     raise ValueError(
                         f"line {line_number}: expected {expected_fields} CSV fields, "

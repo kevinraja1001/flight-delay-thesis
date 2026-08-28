@@ -402,12 +402,10 @@ const getFlights = async (
             errorMessage += ` Config: ${JSON.stringify(err.config)}.`;
             log(errorMessage);
             isNextLinkAvailable = false;
+            shouldRetry = true;
 
             if (err.response?.status === 429) {
-                shouldRetry = true;
                 ATTEMPTS_HISTORY.store(PAGES_LIMIT);
-            } else {
-                shouldRetry = false;
             }
         }
 
