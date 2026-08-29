@@ -1,0 +1,660 @@
+{
+  "airlines_file": {
+    "mtime_ns": 1787940163084333340,
+    "path": "/home/jkrpsiahaan/Documents/thesis-data/datasets/top-australian-airlines.csv",
+    "size": 394
+  },
+  "airports_file": {
+    "mtime_ns": 1787985956216816387,
+    "path": "/home/jkrpsiahaan/Documents/thesis-data/datasets/airports.csv",
+    "size": 12711520
+  },
+  "dataset_records": 647797,
+  "monthly_files": {
+    "202505": {
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/datasets/domestic_monthly/202505.csv",
+      "records": 2,
+      "updated_at": "2026-08-29T09:40:56+00:00"
+    },
+    "202506": {
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/datasets/domestic_monthly/202506.csv",
+      "records": 42919,
+      "updated_at": "2026-08-29T09:40:57+00:00"
+    },
+    "202507": {
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/datasets/domestic_monthly/202507.csv",
+      "records": 48064,
+      "updated_at": "2026-08-29T09:40:58+00:00"
+    },
+    "202508": {
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/datasets/domestic_monthly/202508.csv",
+      "records": 43842,
+      "updated_at": "2026-08-29T09:38:18+00:00"
+    },
+    "202509": {
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/datasets/domestic_monthly/202509.csv",
+      "records": 44718,
+      "updated_at": "2026-08-29T09:37:23+00:00"
+    },
+    "202510": {
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/datasets/domestic_monthly/202510.csv",
+      "records": 46030,
+      "updated_at": "2026-08-29T09:36:33+00:00"
+    },
+    "202511": {
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/datasets/domestic_monthly/202511.csv",
+      "records": 44072,
+      "updated_at": "2026-08-29T09:34:46+00:00"
+    },
+    "202512": {
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/datasets/domestic_monthly/202512.csv",
+      "records": 45852,
+      "updated_at": "2026-08-29T09:34:12+00:00"
+    },
+    "202601": {
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/datasets/domestic_monthly/202601.csv",
+      "records": 44690,
+      "updated_at": "2026-08-29T09:33:21+00:00"
+    },
+    "202602": {
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/datasets/domestic_monthly/202602.csv",
+      "records": 41149,
+      "updated_at": "2026-08-29T09:32:26+00:00"
+    },
+    "202603": {
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/datasets/domestic_monthly/202603.csv",
+      "records": 46196,
+      "updated_at": "2026-08-29T09:32:00+00:00"
+    },
+    "202604": {
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/datasets/domestic_monthly/202604.csv",
+      "records": 45598,
+      "updated_at": "2026-08-29T09:32:01+00:00"
+    },
+    "202605": {
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/datasets/domestic_monthly/202605.csv",
+      "records": 42680,
+      "updated_at": "2026-08-29T09:31:16+00:00"
+    },
+    "202606": {
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/datasets/domestic_monthly/202606.csv",
+      "records": 39438,
+      "updated_at": "2026-08-29T09:30:45+00:00"
+    },
+    "202607": {
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/datasets/domestic_monthly/202607.csv",
+      "records": 43537,
+      "updated_at": "2026-08-29T09:14:48+00:00"
+    },
+    "202608": {
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/datasets/domestic_monthly/202608.csv",
+      "records": 29010,
+      "updated_at": "2026-08-29T09:14:48+00:00"
+    }
+  },
+  "output_directory": "/home/jkrpsiahaan/Documents/thesis-data/datasets/domestic_monthly",
+  "processed_files": {
+    "/home/jkrpsiahaan/Documents/thesis-data/20260526_0006.log": {
+      "domestic_records": 1816,
+      "extracted_records": 2125,
+      "keyed_records": 1816,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940161196288103,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/20260526_0006.log",
+      "processed_at": "2026-08-29T09:02:04+00:00",
+      "size": 2155004
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/20260602_0002.log": {
+      "domestic_records": 10048,
+      "extracted_records": 12059,
+      "keyed_records": 10047,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940161375761842,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/20260602_0002.log",
+      "processed_at": "2026-08-29T09:02:04+00:00",
+      "size": 12020402
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/20260608_0001.log": {
+      "domestic_records": 8971,
+      "extracted_records": 10893,
+      "keyed_records": 8971,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940161477707295,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/20260608_0001.log",
+      "processed_at": "2026-08-29T09:03:56+00:00",
+      "size": 10951459
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/20260615_0001.log": {
+      "domestic_records": 8944,
+      "extracted_records": 10854,
+      "keyed_records": 8944,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940161578173588,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/20260615_0001.log",
+      "processed_at": "2026-08-29T09:03:57+00:00",
+      "size": 10789350
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/20260622_0001.log": {
+      "domestic_records": 9131,
+      "extracted_records": 11111,
+      "keyed_records": 9131,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940161682527104,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/20260622_0001.log",
+      "processed_at": "2026-08-29T09:03:57+00:00",
+      "size": 11199371
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/20260629_0001.log": {
+      "domestic_records": 9477,
+      "extracted_records": 11566,
+      "keyed_records": 9477,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940161826691853,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/20260629_0001.log",
+      "processed_at": "2026-08-29T09:03:58+00:00",
+      "size": 27477729
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/20260706_0001.log": {
+      "domestic_records": 9934,
+      "extracted_records": 12080,
+      "keyed_records": 9934,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940161977164429,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/20260706_0001.log",
+      "processed_at": "2026-08-29T09:05:10+00:00",
+      "size": 28672110
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/20260713_0001.log": {
+      "domestic_records": 10061,
+      "extracted_records": 12255,
+      "keyed_records": 10061,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940162130475501,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/20260713_0001.log",
+      "processed_at": "2026-08-29T09:05:11+00:00",
+      "size": 29145801
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/20260721_0001.log": {
+      "domestic_records": 9907,
+      "extracted_records": 12062,
+      "keyed_records": 9907,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940162281601648,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/20260721_0001.log",
+      "processed_at": "2026-08-29T09:05:12+00:00",
+      "size": 28692649
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/20260727_0001.log": {
+      "domestic_records": 9436,
+      "extracted_records": 11511,
+      "keyed_records": 9436,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940162426483299,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/20260727_0001.log",
+      "processed_at": "2026-08-29T09:05:13+00:00",
+      "size": 27403632
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/20260803_0002.log": {
+      "domestic_records": 9075,
+      "extracted_records": 11081,
+      "keyed_records": 9075,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940162618156846,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/20260803_0002.log",
+      "processed_at": "2026-08-29T09:06:21+00:00",
+      "size": 26331068
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/20260803_additional_0001.log": {
+      "domestic_records": 483,
+      "extracted_records": 643,
+      "keyed_records": 483,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940162621992484,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/20260803_additional_0001.log",
+      "processed_at": "2026-08-29T09:06:22+00:00",
+      "size": 1369356
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/20260803_additional_0002.log": {
+      "domestic_records": 474,
+      "extracted_records": 656,
+      "keyed_records": 474,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787994840963910813,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/20260803_additional_0002.log",
+      "processed_at": "2026-08-29T09:14:46+00:00",
+      "size": 1397605
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/20260811_0001.log": {
+      "domestic_records": 9167,
+      "extracted_records": 11134,
+      "keyed_records": 9167,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940162760091793,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/20260811_0001.log",
+      "processed_at": "2026-08-29T09:06:22+00:00",
+      "size": 26381253
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/20260817_0001.log": {
+      "domestic_records": 9177,
+      "extracted_records": 11141,
+      "keyed_records": 9177,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940162897892639,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/20260817_0001.log",
+      "processed_at": "2026-08-29T09:06:23+00:00",
+      "size": 26378870
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/20260825_0002.log": {
+      "domestic_records": 8569,
+      "extracted_records": 10571,
+      "keyed_records": 8569,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940163083427708,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/20260825_0002.log",
+      "processed_at": "2026-08-29T09:06:24+00:00",
+      "size": 24684945
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202506_0001.log": {
+      "domestic_records": 42115,
+      "extracted_records": 51212,
+      "keyed_records": 42113,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940163625210007,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202506_0001.log",
+      "processed_at": "2026-08-29T09:40:54+00:00",
+      "size": 115482624
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202506_additional_0001.log": {
+      "domestic_records": 1678,
+      "extracted_records": 2028,
+      "keyed_records": 1678,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940163638874582,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202506_additional_0001.log",
+      "processed_at": "2026-08-29T09:40:56+00:00",
+      "size": 4568440
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202507_0001.log": {
+      "domestic_records": 24392,
+      "extracted_records": 29290,
+      "keyed_records": 24392,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940163831220810,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202507_0001.log",
+      "processed_at": "2026-08-29T09:38:32+00:00",
+      "size": 65310631
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202507_0002.log": {
+      "domestic_records": 47701,
+      "extracted_records": 58092,
+      "keyed_records": 47701,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940164435843682,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202507_0002.log",
+      "processed_at": "2026-08-29T09:38:14+00:00",
+      "size": 130625879
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202507_additional_0001.log": {
+      "domestic_records": 1678,
+      "extracted_records": 2029,
+      "keyed_records": 1678,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940164449384697,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202507_additional_0001.log",
+      "processed_at": "2026-08-29T09:38:16+00:00",
+      "size": 4554073
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202508_0001.log": {
+      "domestic_records": 36621,
+      "extracted_records": 49402,
+      "keyed_records": 36621,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940164944274445,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202508_0001.log",
+      "processed_at": "2026-08-29T09:37:18+00:00",
+      "size": 109393601
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202508_additional_0001.log": {
+      "domestic_records": 6475,
+      "extracted_records": 9031,
+      "keyed_records": 6475,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940165004884798,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202508_additional_0001.log",
+      "processed_at": "2026-08-29T09:37:19+00:00",
+      "size": 20257169
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202508_additional_0002.log": {
+      "domestic_records": 344,
+      "extracted_records": 481,
+      "keyed_records": 344,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940165008426023,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202508_additional_0002.log",
+      "processed_at": "2026-08-29T09:37:21+00:00",
+      "size": 1097077
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202508_additional_0003.log": {
+      "domestic_records": 363,
+      "extracted_records": 371,
+      "keyed_records": 363,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940165011020134,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202508_additional_0003.log",
+      "processed_at": "2026-08-29T09:37:21+00:00",
+      "size": 829957
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202508_additional_0004.log": {
+      "domestic_records": 246,
+      "extracted_records": 253,
+      "keyed_records": 246,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940165012976615,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202508_additional_0004.log",
+      "processed_at": "2026-08-29T09:37:21+00:00",
+      "size": 563666
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202508_additional_0005.log": {
+      "domestic_records": 1822,
+      "extracted_records": 3122,
+      "keyed_records": 1822,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940165032821795,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202508_additional_0005.log",
+      "processed_at": "2026-08-29T09:37:21+00:00",
+      "size": 6881843
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202508_additional_0006.log": {
+      "domestic_records": 944,
+      "extracted_records": 1104,
+      "keyed_records": 944,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940165040362689,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202508_additional_0006.log",
+      "processed_at": "2026-08-29T09:37:21+00:00",
+      "size": 2517200
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202509_0001.log": {
+      "domestic_records": 34612,
+      "extracted_records": 41168,
+      "keyed_records": 34612,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940165466980766,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202509_0001.log",
+      "processed_at": "2026-08-29T09:36:28+00:00",
+      "size": 92937745
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202509_0001_additional.log": {
+      "domestic_records": 0,
+      "extracted_records": 0,
+      "keyed_records": 0,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940165467300734,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202509_0001_additional.log",
+      "processed_at": "2026-08-29T09:36:28+00:00",
+      "size": 222
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202509_additional_0001.log": {
+      "domestic_records": 6172,
+      "extracted_records": 8149,
+      "keyed_records": 6172,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940165522479924,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202509_additional_0001.log",
+      "processed_at": "2026-08-29T09:36:29+00:00",
+      "size": 18478565
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202509_additional_0002.log": {
+      "domestic_records": 267,
+      "extracted_records": 384,
+      "keyed_records": 267,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940165525310706,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202509_additional_0002.log",
+      "processed_at": "2026-08-29T09:36:29+00:00",
+      "size": 878586
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202509_additional_0003.log": {
+      "domestic_records": 3333,
+      "extracted_records": 4876,
+      "keyed_records": 3333,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940165558081974,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202509_additional_0003.log",
+      "processed_at": "2026-08-29T09:36:29+00:00",
+      "size": 11109509
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202509_additional_0004.log": {
+      "domestic_records": 440,
+      "extracted_records": 574,
+      "keyed_records": 440,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940165562163302,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202509_additional_0004.log",
+      "processed_at": "2026-08-29T09:36:29+00:00",
+      "size": 1300616
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202509_additional_0005.log": {
+      "domestic_records": 268,
+      "extracted_records": 385,
+      "keyed_records": 268,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940165564929350,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202509_additional_0005.log",
+      "processed_at": "2026-08-29T09:36:29+00:00",
+      "size": 884378
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202509_additional_0006.log": {
+      "domestic_records": 315,
+      "extracted_records": 440,
+      "keyed_records": 315,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940165568048130,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202509_additional_0006.log",
+      "processed_at": "2026-08-29T09:36:29+00:00",
+      "size": 1005034
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202509_additional_0007.log": {
+      "domestic_records": 1655,
+      "extracted_records": 2037,
+      "keyed_records": 1655,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940165581614273,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202509_additional_0007.log",
+      "processed_at": "2026-08-29T09:36:31+00:00",
+      "size": 4566302
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202510_0001.log": {
+      "domestic_records": 45081,
+      "extracted_records": 55098,
+      "keyed_records": 45081,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940166163750042,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202510_0001.log",
+      "processed_at": "2026-08-29T09:34:42+00:00",
+      "size": 124482060
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202510_0001_additional.log": {
+      "domestic_records": 449,
+      "extracted_records": 598,
+      "keyed_records": 449,
+      "local_timestamps_supplied": 4571,
+      "mtime_ns": 1787940166167101470,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202510_0001_additional.log",
+      "processed_at": "2026-08-29T09:34:42+00:00",
+      "size": 1015050
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202510_additional_0001.log": {
+      "domestic_records": 1651,
+      "extracted_records": 2001,
+      "keyed_records": 1651,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940166180821221,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202510_additional_0001.log",
+      "processed_at": "2026-08-29T09:34:44+00:00",
+      "size": 4527130
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202511_0001.log": {
+      "domestic_records": 44421,
+      "extracted_records": 54425,
+      "keyed_records": 44421,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940166755593066,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202511_0001.log",
+      "processed_at": "2026-08-29T09:34:08+00:00",
+      "size": 122749241
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202511_additional_0001.log": {
+      "domestic_records": 1414,
+      "extracted_records": 1736,
+      "keyed_records": 1414,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940166767773881,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202511_additional_0001.log",
+      "processed_at": "2026-08-29T09:34:10+00:00",
+      "size": 3943873
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202512_0001.log": {
+      "domestic_records": 45562,
+      "extracted_records": 56534,
+      "keyed_records": 45562,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940167369654787,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202512_0001.log",
+      "processed_at": "2026-08-29T09:33:17+00:00",
+      "size": 127987511
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202512_additional_0001.log": {
+      "domestic_records": 1419,
+      "extracted_records": 1795,
+      "keyed_records": 1419,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940167381944312,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202512_additional_0001.log",
+      "processed_at": "2026-08-29T09:33:19+00:00",
+      "size": 4051457
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202601_0001.log": {
+      "domestic_records": 44825,
+      "extracted_records": 55957,
+      "keyed_records": 44824,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940167977447262,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202601_0001.log",
+      "processed_at": "2026-08-29T09:32:57+00:00",
+      "size": 126754851
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202601_additional_0001.log": {
+      "domestic_records": 1069,
+      "extracted_records": 1381,
+      "keyed_records": 1069,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940167987299749,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202601_additional_0001.log",
+      "processed_at": "2026-08-29T09:32:57+00:00",
+      "size": 3166105
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202602_0001.log": {
+      "domestic_records": 40738,
+      "extracted_records": 50128,
+      "keyed_records": 40738,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940168521671608,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202602_0001.log",
+      "processed_at": "2026-08-29T09:32:25+00:00",
+      "size": 113588464
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202602_0001_additional.log": {
+      "domestic_records": 334,
+      "extracted_records": 347,
+      "keyed_records": 334,
+      "local_timestamps_supplied": 3853,
+      "mtime_ns": 1787940168523719945,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202602_0001_additional.log",
+      "processed_at": "2026-08-29T09:32:25+00:00",
+      "size": 583322
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202602_additional_0001.log": {
+      "domestic_records": 1065,
+      "extracted_records": 1386,
+      "keyed_records": 1065,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940168533171468,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202602_additional_0001.log",
+      "processed_at": "2026-08-29T09:32:25+00:00",
+      "size": 3143630
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202603_0001.log": {
+      "domestic_records": 45302,
+      "extracted_records": 55604,
+      "keyed_records": 45302,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940169124952569,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202603_0001.log",
+      "processed_at": "2026-08-29T09:31:57+00:00",
+      "size": 125933302
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202603_0001_additional.log": {
+      "domestic_records": 400,
+      "extracted_records": 424,
+      "keyed_records": 400,
+      "local_timestamps_supplied": 4612,
+      "mtime_ns": 1787940169127426482,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202603_0001_additional.log",
+      "processed_at": "2026-08-29T09:31:57+00:00",
+      "size": 711415
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202603_additional_0001.log": {
+      "domestic_records": 1650,
+      "extracted_records": 2007,
+      "keyed_records": 1650,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940169140948571,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202603_additional_0001.log",
+      "processed_at": "2026-08-29T09:31:59+00:00",
+      "size": 4540027
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202604_0002.log": {
+      "domestic_records": 44756,
+      "extracted_records": 55150,
+      "keyed_records": 44756,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940169723147019,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202604_0002.log",
+      "processed_at": "2026-08-29T09:31:12+00:00",
+      "size": 124955489
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202604_additional_0001.log": {
+      "domestic_records": 1634,
+      "extracted_records": 2002,
+      "keyed_records": 1634,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940169736646890,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202604_additional_0001.log",
+      "processed_at": "2026-08-29T09:31:14+00:00",
+      "size": 4516183
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202605_0001.log": {
+      "domestic_records": 41904,
+      "extracted_records": 51550,
+      "keyed_records": 41904,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940170309060883,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202605_0001.log",
+      "processed_at": "2026-08-29T09:30:41+00:00",
+      "size": 117013675
+    },
+    "/home/jkrpsiahaan/Documents/thesis-data/hist_202605_additional_0001.log": {
+      "domestic_records": 1252,
+      "extracted_records": 1557,
+      "keyed_records": 1252,
+      "local_timestamps_supplied": 0,
+      "mtime_ns": 1787940170323426565,
+      "path": "/home/jkrpsiahaan/Documents/thesis-data/hist_202605_additional_0001.log",
+      "processed_at": "2026-08-29T09:30:42+00:00",
+      "size": 3568295
+    }
+  },
+  "updated_at": "2026-08-29T10:07:38+00:00",
+  "version": 2
+}
